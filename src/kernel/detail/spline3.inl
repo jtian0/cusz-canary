@@ -348,16 +348,16 @@ __forceinline__ __device__ void interpolate_stage(
     auto run = [&](auto x, auto y, auto z) {
 
         int temp=1;
-        FP ori_ebx2=ebx2,orieb_r=eb_r;
+        FP cur_ebx2=ebx2,cur_eb_r=eb_r;
         while(temp<unit){
             temp*=2;
-            eb_r*=1.75;
-            ebx2/=1.75;
+            cur_eb_r*=1.75;
+            cur_ebx2/=1.75;
 
         }
-        if(ebx2<ori_ebx2/3){
-            ebx2=ori_ebx2/3;
-            eb_r=orieb_r*3;
+        if(cur_ebx2<ebx2/3){
+            cur_ebx2=ebx2/3;
+            cur_eb_r=eb_r*3;
 
         }
 
@@ -401,16 +401,16 @@ __forceinline__ __device__ void interpolate_stage(
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
-                    code = fabs(err) * eb_r + 1;
+                    code = fabs(err) * cur_eb_r + 1;
                     code = err < 0 ? -code : code;
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
-                s_data[z][y][x]  = pred + (code - radius) * ebx2;
+                s_data[z][y][x]  = pred + (code - radius) * cur_ebx2;
             }
             else {  // TODO == DECOMPRESSS and static_assert
                 auto code       = s_ectrl[z][y][x];
-                s_data[z][y][x] = pred + (code - radius) * ebx2;
+                s_data[z][y][x] = pred + (code - radius) * cur_ebx2;
             }
         }
     };
