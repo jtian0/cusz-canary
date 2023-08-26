@@ -352,18 +352,31 @@ __forceinline__ __device__ void interpolate_stage(
             if CONSTEXPR (BLUE) {  //
                 if(z>=3*unit and z+3*unit<=BLOCK8 )
                     pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                else if (z+3*unit<=BLOCK8)
+                    pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                else if (z>=3*unit)
+                    pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+
                 else
                     pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
             }
             if CONSTEXPR (YELLOW) {  //
                 if(x>=3*unit and x+3*unit<=BLOCK32 )
                     pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
+                else if (x+3*unit<=BLOCK32)
+                    pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
+                else if (x>=3*unit)
+                    pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
                 else
                     pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
             }
             if CONSTEXPR (HOLLOW) {  //
                 if(y>=3*unit and y+3*unit<=BLOCK8 )
                     pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                else if (y+3*unit<=BLOCK8)
+                    pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                else if (y>=3*unit)
+                    pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
                 else
                     pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
             }
