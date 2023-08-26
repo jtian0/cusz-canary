@@ -350,13 +350,22 @@ __forceinline__ __device__ void interpolate_stage(
             T1 pred = 0;
 
             if CONSTEXPR (BLUE) {  //
-                pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                if(z>=3*unit and z+3*unit<=BLOCK8)
+                    pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                else
+                    pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
             }
             if CONSTEXPR (YELLOW) {  //
-                pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                if(x>=3*unit and x+3*unit<=BLOCK32)
+                    pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
+                else
+                    pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
             }
             if CONSTEXPR (HOLLOW) {  //
-                pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                if(y>=3*unit and y+3*unit<=BLOCK8)
+                    pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                else
+                    pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
             }
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
