@@ -356,7 +356,7 @@ __forceinline__ __device__ void interpolate_stage(
 
         }
         if(ebx2<ori_ebx2/3){
-            ebx=ori_ebx2/3;
+            ebx2=ori_ebx2/3;
             eb_r=orieb_r*3;
 
         }
