@@ -346,6 +346,21 @@ __forceinline__ __device__ void interpolate_stage(
     static_assert((YELLOW and HOLLOW) == false, "must be only one hot (3)");
 
     auto run = [&](auto x, auto y, auto z) {
+
+        int temp=1;
+        FP ori_ebx2=ebx2,orieb_r=eb_r;
+        while(temp<unit){
+            temp*=2;
+            eb_r*=1.75;
+            ebx2/=1.75;
+
+        }
+        if(ebx2<ori_ebx2/3){
+            ebx=ori_ebx2/3;
+            eb_r=orieb_r*3;
+
+        }
+
         if (xyz33x9x9_predicate<BORDER_INCLUSIVE>(x, y, z)) {
             T1 pred = 0;
 
