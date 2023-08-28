@@ -445,6 +445,7 @@ __forceinline__ __device__ void interpolate_stage(
         auto x    = xmap(itix, unit);
         auto y    = ymap(itiy, unit);
         auto z    = zmap(itiz, unit);
+        printf("%d %d %d\n", x,y,z);
         run(x, y, z);
     }
     __syncthreads();
