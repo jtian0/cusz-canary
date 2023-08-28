@@ -105,8 +105,8 @@ template <
     bool WORKFLOW         = SPLINE3_COMPR,
     bool PROBE_PRED_ERROR = false>
 __device__ void
-spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius,double alpha=1.75,
-    double beta=3.0,
+spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius,double alpha,
+    double beta,
     );
 }  // namespace device_api
 
