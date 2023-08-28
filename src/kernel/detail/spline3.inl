@@ -570,6 +570,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             false, false, true, LINEAR_BLOCK_SIZE, 4, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
     }
+    printf("lv3\n");
 
     unit = 2;
     calc_eb(unit);
@@ -605,7 +606,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
 
     }
-
+    printf("lv2\n");
     unit = 1;
     calc_eb(unit);
    // set_orders(reverse[0]);
@@ -641,6 +642,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
     }
+    printf("lv1\n");
     
 
 
