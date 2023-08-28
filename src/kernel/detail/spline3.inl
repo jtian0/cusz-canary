@@ -342,7 +342,7 @@ __forceinline__ __device__ void interpolate_stage(
     int         radius,
     bool cubic=true)
 {
-    static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= LINEAR_BLOCK_SIZE, "block oversized");
+    static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= MAX_LINEAR_BLOCK_SIZE, "block oversized");
     static_assert((BLUE or YELLOW or HOLLOW) == true, "must be one hot");
     static_assert((BLUE and YELLOW) == false, "must be only one hot (1)");
     static_assert((BLUE and YELLOW) == false, "must be only one hot (2)");
