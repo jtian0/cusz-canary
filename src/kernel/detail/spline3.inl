@@ -459,7 +459,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     volatile T2 s_ectrl[9][9][33],
     FP          eb_r,
     FP          ebx2,
-    int         radius,
+    int         radius
     
     )
 {
