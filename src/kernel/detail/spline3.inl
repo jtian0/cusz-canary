@@ -35,7 +35,7 @@
 #define BIZ blockIdx.z
 #define BDX blockDim.x
 #define BDY blockDim.y
-#define BDZ blockDim.
+#define BDZ blockDim.z
 
 using DIM     = unsigned int;
 using STRIDE  = unsigned int;
@@ -557,22 +557,26 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
 
     }
     else{
+        if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
         printf("lv3s0\n");
         interpolate_stage<
             T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
             true, false, false, LINEAR_BLOCK_SIZE, 5, 2, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+        if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
         printf("lv3s1\n");
         interpolate_stage<
             T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
             false, true, false, LINEAR_BLOCK_SIZE, 5, 1, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+        if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
         printf("lv3s2\n");
         interpolate_stage<
             T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
             false, false, true, LINEAR_BLOCK_SIZE, 4, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
     }
+    if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
     printf("lv3\n");
 
     unit = 2;
@@ -609,6 +613,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
 
     }
+    if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
     printf("lv2\n");
     unit = 1;
     calc_eb(unit);
@@ -645,6 +650,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
     }
+    if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
     printf("lv1\n");
     
 
