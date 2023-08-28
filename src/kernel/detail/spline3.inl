@@ -44,7 +44,7 @@ using STRIDE3 = dim3;
 
 constexpr int BLOCK8  = 8;
 constexpr int BLOCK32 = 32;
-constexpr int MAX_LINEAR_BLOCK_SIZE = 384;
+constexpr int MAX_LINEAR_BLOCK_SIZE = 256;
 
 #define SHM_ERROR s_ectrl
 
