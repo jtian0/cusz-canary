@@ -502,7 +502,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             cur_eb_r=eb_r*beta;
 
         }
-    }
+    };
 
 
 
