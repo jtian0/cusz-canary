@@ -105,8 +105,7 @@ template <
     bool WORKFLOW         = SPLINE3_COMPR,
     bool PROBE_PRED_ERROR = false>
 __device__ void
-spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius,double alpha,
-    double beta,
+spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius
     );
 }  // namespace device_api
 
@@ -461,11 +460,11 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     FP          eb_r,
     FP          ebx2,
     int         radius,
-    double alpha=1.75,
-    double beta=3.0,
+    
     )
 {
-
+    double alpha=1.75;
+    double beta=3.0;
     bool interpolators[3]={true,true,true};
     bool reverse[3]={false,false,false};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
