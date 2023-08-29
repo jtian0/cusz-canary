@@ -342,7 +342,7 @@ __forceinline__ __device__ void interpolate_stage(
     int         radius,
     bool cubic)
 {
-    static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= 384, "block oversized");
+    static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= LINEAR_BLOCK_SIZE, "block oversized");
     static_assert((BLUE or YELLOW or HOLLOW) == true, "must be one hot");
     static_assert((BLUE and YELLOW) == false, "must be only one hot (1)");
     static_assert((BLUE and YELLOW) == false, "must be only one hot (2)");
@@ -428,7 +428,7 @@ __forceinline__ __device__ void interpolate_stage(
 
     if CONSTEXPR (COARSEN) {
         constexpr auto TOTAL = BLOCK_DIMX * BLOCK_DIMY * BLOCK_DIMZ;
-        if( BLOCK_DIMX *BLOCK_DIMY<= LINEAR_BLOCK_SIZE){
+        //if( BLOCK_DIMX *BLOCK_DIMY<= LINEAR_BLOCK_SIZE){
             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
                 auto itix = (_tix % BLOCK_DIMX);
                 auto itiy = (_tix / BLOCK_DIMX) % BLOCK_DIMY;
@@ -438,7 +438,8 @@ __forceinline__ __device__ void interpolate_stage(
                 auto z    = zmap(itiz, unit);
                 run(x, y, z);
             }
-        }
+        //}
+            /*
         else{
             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
                 auto itix = (_tix % BLOCK_DIMX);
@@ -450,6 +451,7 @@ __forceinline__ __device__ void interpolate_stage(
                 run(x, y, z);
             }
         }
+        */
     }
     else {
         auto itix = (TIX % BLOCK_DIMX);
@@ -482,7 +484,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     double alpha=1.75;
     double beta=3.0;
     bool interpolators[3]={true,true,true};
-    bool reverse[3]={false,true,true};
+    bool reverse[3]={true,true,true};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
@@ -856,7 +858,7 @@ void launch_construct_Spline3(
         throw std::runtime_error("Spline2 not implemented");
     }
     else if (d == 3) {
-        cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, 256, false>  //
+        cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, 384, false>  //
             <<<GRID_3D, BLOCK_3D, 0, stream>>>                            //
             (data, len3, leap3,                                           //
              ectrl, ec_len3, ec_leap3,                                    //
