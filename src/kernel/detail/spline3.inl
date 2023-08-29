@@ -439,7 +439,7 @@ __forceinline__ __device__ void interpolate_stage(
                 run(x, y, z);
             }
         }
-            
+        //may have bug    
         else{
             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
                 auto itix = (_tix % BLOCK_DIMX);
@@ -451,6 +451,7 @@ __forceinline__ __device__ void interpolate_stage(
                 run(x, y, z);
             }
         }
+        //may have bug  end
         
     }
     else {
@@ -484,7 +485,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     double alpha=1.75;
     double beta=3.0;
     bool interpolators[3]={true,true,true};
-    bool reverse[3]={false,true,true};
+    bool reverse[3]={true,true,true};//{false,true,true};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
@@ -651,6 +652,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
 
     // iteration 3
     if(reverse[0]){
+        //may have bug 
         interpolate_stage<
             T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_EXCLUSIVE, WORKFLOW>(
@@ -663,6 +665,8 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+
+        //may have bug end
     }
     else{
         interpolate_stage<
