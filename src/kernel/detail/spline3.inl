@@ -445,6 +445,7 @@ __forceinline__ __device__ void interpolate_stage(
         auto x    = xmap(itix, unit);
         auto y    = ymap(itiy, unit);
         auto z    = zmap(itiz, unit);
+
         printf("%d %d %d\n", x,y,z);
         run(x, y, z);
     }
@@ -473,12 +474,12 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
 
-    auto xyellow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 + 1); };
-    auto yyellow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
+    auto xyellow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
+    auto yyellow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2+1); };
     auto zyellow = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz); };
 
-    auto xhollow = [] __device__(int _tix, int unit) -> int { return unit * (_tix); };
-    auto yhollow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2 + 1); };
+    auto xhollow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 +1); };
+    auto yhollow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy); };
     auto zhollow = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz); };
 
     constexpr auto COARSEN          = true;
