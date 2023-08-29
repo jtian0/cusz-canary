@@ -149,7 +149,7 @@ spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool com
                     if (compress) {
                         if (c == 0) { printf("%3c", '.'); }
                         else {
-                            if (abs(c) >= 10) { printf("%3c", '*'); }
+                            if (fabs(c) >= 10) { printf("%3c", '*'); }
                             else {
                                 if (print_ectrl) { printf("%3d", c); }
                                 else {
