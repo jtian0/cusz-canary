@@ -703,8 +703,8 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     /******************************************************************************
      test only: print a block
      ******************************************************************************/
-     if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_ectrl); }
-     if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_data); }
+     //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_ectrl); }
+     //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_data); }
 }
 
 /********************************************************************************
