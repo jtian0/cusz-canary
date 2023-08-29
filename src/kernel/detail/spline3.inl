@@ -826,7 +826,7 @@ void launch_construct_Spline3(
 
     constexpr auto SUBLEN_3D = dim3(32, 8, 8);
     constexpr auto SEQ_3D    = dim3(1, 8, 1);
-    constexpr auto BLOCK_3D  = dim3(256, 1, 1);
+    constexpr auto BLOCK_3D  = dim3(384, 1, 1);
     auto           GRID_3D   = divide3(len3, SUBLEN_3D);
 
     {
