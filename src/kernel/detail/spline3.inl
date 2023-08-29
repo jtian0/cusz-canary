@@ -929,7 +929,7 @@ void launch_reconstruct_Spline3(
     CREATE_CUDAEVENT_PAIR;
     START_CUDAEVENT_RECORDING(stream);
 
-    cusz::x_spline3d_infprecis_32x8x8data<E*, T*, float, 256>  //
+    cusz::x_spline3d_infprecis_32x8x8data<E*, T*, float, 384>  //
         <<<GRID_3D, BLOCK_3D, 0, stream>>>                     //
         (ectrl, ec_len3, ec_leap3,                             //
          anchor, an_len3, an_leap3,                            //
