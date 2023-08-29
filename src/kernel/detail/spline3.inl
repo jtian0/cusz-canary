@@ -469,7 +469,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     double alpha=1.75;
     double beta=3.0;
     bool interpolators[3]={true,true,true};
-    bool reverse[3]={false,true,true};
+    bool reverse[3]={true,true,true};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
