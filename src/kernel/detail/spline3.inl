@@ -469,18 +469,31 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     double alpha=1.75;
     double beta=3.0;
     bool interpolators[3]={true,true,true};
-    bool reverse[3]={true,true,true};//{false,false,false};
+    bool reverse[3]={false,false,false};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
+
+    auto xblue_reverse = [] __device__(int _tix, int unit) -> int { return unit * (_tix ); };
+    auto yblue_reverse = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy ); };
+    auto zblue_reverse = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
 
     auto xyellow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yyellow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2+1); };
     auto zyellow = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz); };
 
+    auto xyellow_reverse = [] __device__(int _tix, int unit) -> int { return unit * (_tix ); };
+    auto yyellow_reverse = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2+1); };
+    auto zyellow_reverse = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2); };
+
+
     auto xhollow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 +1); };
     auto yhollow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy); };
     auto zhollow = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz); };
+
+    auto xhollow_reverse = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 +1); };
+    auto yhollow_reverse = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
+    auto zhollow_reverse = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz *2); };
 
     constexpr auto COARSEN          = true;
     constexpr auto NO_COARSEN       = false;
@@ -543,16 +556,16 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     //set_orders(reverse[2]);
     if(reverse[2]){
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 4, 2, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
 
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
             false, true, false, LINEAR_BLOCK_SIZE, 9, 1, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
         interpolate_stage<
-            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 9, 3, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
 
@@ -588,15 +601,15 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     // iteration 2, TODO switch y-z order
     if(reverse[1]){
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 8, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
             false, true, false, LINEAR_BLOCK_SIZE, 17, 2, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
         interpolate_stage<
-            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 17, 5, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
     }
@@ -624,15 +637,15 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     // iteration 3
     if(reverse[0]){
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_EXCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
             false, true, false, LINEAR_BLOCK_SIZE, 33, 4, COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
-            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
     }
