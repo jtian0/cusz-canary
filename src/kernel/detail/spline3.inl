@@ -424,7 +424,7 @@ __forceinline__ __device__ void interpolate_stage(
 
     if CONSTEXPR (COARSEN) {
         constexpr auto TOTAL = BLOCK_DIMX * BLOCK_DIMY * BLOCK_DIMZ;
-        if( BLOCK_DIMX *BLOCK_DIMY<= LINEAR_BLOCK_SIZE){
+        //if( BLOCK_DIMX *BLOCK_DIMY<= LINEAR_BLOCK_SIZE){
             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
                 auto itix = (_tix % BLOCK_DIMX);
                 auto itiy = (_tix / BLOCK_DIMX) % BLOCK_DIMY;
@@ -436,6 +436,7 @@ __forceinline__ __device__ void interpolate_stage(
             }
         }
         //may have bug    
+        /*
         else{
             for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
                 auto itix = (_tix % BLOCK_DIMX);
@@ -446,7 +447,7 @@ __forceinline__ __device__ void interpolate_stage(
                 auto z    = zmap(itiz, unit);
                 run(x, y, z);
             }
-        }
+        }*/
         //may have bug  end
         
     }
@@ -481,7 +482,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     double alpha=1.75;
     double beta=3.0;
     bool interpolators[3]={true,true,true};
-    bool reverse[3]={false,true,true};//{false,true,true};
+    bool reverse[3]={true,true,true};//{false,true,true};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
