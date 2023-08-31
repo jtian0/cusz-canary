@@ -16,7 +16,7 @@
 #include <stdio.h>
 #include <type_traits>
 #include "utils/err.hh"
-#include "utils/timer.h"
+#include "utils/timer.hh"
 
 #define SPLINE3_COMPR true
 #define SPLINE3_DECOMPR false
