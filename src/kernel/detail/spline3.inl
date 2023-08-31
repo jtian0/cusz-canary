@@ -35,7 +35,7 @@
 #define BIZ blockIdx.z
 #define BDX blockDim.x
 #define BDY blockDim.y
-#define BDZ blockDim.z
+#define BDZ blockDim.
 
 using DIM     = unsigned int;
 using STRIDE  = unsigned int;
@@ -44,7 +44,6 @@ using STRIDE3 = dim3;
 
 constexpr int BLOCK8  = 8;
 constexpr int BLOCK32 = 32;
-constexpr int MAX_LINEAR_BLOCK_SIZE = 256;
 
 #define SHM_ERROR s_ectrl
 
@@ -58,8 +57,7 @@ template <
     typename TITER,
     typename EITER,
     typename FP            = float,
-    int  LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE,
-    bool PROBE_PRED_ERROR  = false>
+    int  LINEAR_BLOCK_SIZE = 256>
 __global__ void c_spline3d_infprecis_32x8x8data(
     TITER   data,
     DIM3    data_size,
@@ -71,15 +69,13 @@ __global__ void c_spline3d_infprecis_32x8x8data(
     STRIDE3 anchor_leap,
     FP      eb_r,
     FP      ebx2,
-    int     radius,
-    TITER   pred_error     = nullptr,
-    TITER   compress_error = nullptr);
+    int     radius);
 
 template <
     typename EITER,
     typename TITER,
     typename FP           = float,
-    int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+    int LINEAR_BLOCK_SIZE = 256>
 __global__ void x_spline3d_infprecis_32x8x8data(
     EITER   ectrl,        // input 1
     DIM3    ectrl_size,   //
@@ -106,8 +102,7 @@ template <
     bool WORKFLOW         = SPLINE3_COMPR,
     bool PROBE_PRED_ERROR = false>
 __device__ void
-spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius
-    );
+spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius);
 }  // namespace device_api
 
 }  // namespace cusz
@@ -149,7 +144,7 @@ spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool com
                     if (compress) {
                         if (c == 0) { printf("%3c", '.'); }
                         else {
-                            if (fabs(c) >= 10) { printf("%3c", '*'); }
+                            if (abs(c) >= 10) { printf("%3c", '*'); }
                             else {
                                 if (print_ectrl) { printf("%3d", c); }
                                 else {
@@ -172,7 +167,7 @@ spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool com
     printf("\nGPU print end\n\n");
 }
 
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256>
 __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], int radius)
 {
     // alternatively, reinterprete cast volatile T?[][][] to 1D
@@ -194,7 +189,7 @@ __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatil
     __syncthreads();
 }
 
-template <typename T1, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+template <typename T1, int LINEAR_BLOCK_SIZE = 256>
 __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1* anchor, STRIDE3 anchor_leap)
 {
     auto x = (TIX % 32) + BIX * 32;
@@ -214,7 +209,7 @@ __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1*
 
 /*
  * use shmem, erroneous
-template <typename T1, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+template <typename T1, int LINEAR_BLOCK_SIZE = 256>
 __device__ void c_gather_anchor(volatile T1 s_data[9][9][33], T1* anchor, STRIDE3 anchor_leap)
 {
     constexpr auto NUM_ITERS = 33 * 9 * 9 / LINEAR_BLOCK_SIZE + 1;  // 11 iterations
@@ -238,7 +233,7 @@ __device__ void c_gather_anchor(volatile T1 s_data[9][9][33], T1* anchor, STRIDE
 }
 */
 
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+template <typename T1, typename T2 = T1, int LINEAR_BLOCK_SIZE = 256>
 __device__ void x_reset_scratch_33x9x9data(
     volatile T1 s_xdata[9][9][33],
     volatile T2 s_ectrl[9][9][33],
@@ -274,8 +269,8 @@ __device__ void x_reset_scratch_33x9x9data(
     __syncthreads();
 }
 
-template <typename Input, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
-__device__ void global2shmem_33x9x9data(Input* data, DIM3 data_size, STRIDE3 data_leap, volatile Input s_data[9][9][33])
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256>
+__device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[9][9][33])
 {
     constexpr auto TOTAL = 33 * 9 * 9;
 
@@ -293,9 +288,10 @@ __device__ void global2shmem_33x9x9data(Input* data, DIM3 data_size, STRIDE3 dat
     __syncthreads();
 }
 
-template <typename Output, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+// dram_outlier should be the same in type with shared memory buf
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256, bool WITH_COMPACT = false>
 __device__ void
-shmem2global_32x8x8data(volatile Output s_data[9][9][33], Output* data, DIM3 data_size, STRIDE3 data_leap)
+shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, T1* dram_outlier = nullptr, uint32_t* dram_idx = nullptr)
 {
     constexpr auto TOTAL = 32 * 8 * 8;
 
@@ -306,9 +302,9 @@ shmem2global_32x8x8data(volatile Output s_data[9][9][33], Output* data, DIM3 dat
         auto gx  = (x + BIX * BLOCK32);
         auto gy  = (y + BIY * BLOCK8);
         auto gz  = (z + BIZ * BLOCK8);
-        auto gid = gx + gy * data_leap.y + gz * data_leap.z;
+        auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
 
-        if (gx < data_size.x and gy < data_size.y and gz < data_size.z) data[gid] = s_data[z][y][x];
+        if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) dram_buf[gid] = s_buf[z][y][x];
     }
     __syncthreads();
 }
@@ -711,7 +707,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
  * host API/kernel
  ********************************************************************************/
 
-template <typename TITER, typename EITER, typename FP, int LINEAR_BLOCK_SIZE, bool PROBE_PRED_ERROR>
+template <typename TITER, typename EITER, typename FP, int LINEAR_BLOCK_SIZE>
 __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     TITER   data,
     DIM3    data_size,
@@ -723,34 +719,29 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
     STRIDE3 anchor_leap,
     FP      eb_r,
     FP      ebx2,
-    int     radius,
-    TITER   pred_error,
-    TITER   compress_error)
+    int     radius)
 {
     // compile time variables
     using T = typename std::remove_pointer<TITER>::type;
     using E = typename std::remove_pointer<EITER>::type;
 
-    if CONSTEXPR (PROBE_PRED_ERROR) {
-        // TODO
-    }
-    else {
+    {
         __shared__ struct {
             T data[9][9][33];
-            E ectrl[9][9][33];
+            T ectrl[9][9][33];
         } shmem;
 
-        c_reset_scratch_33x9x9data<T, E, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
-        global2shmem_33x9x9data<T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
+        c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
+        global2shmem_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
 
         // version 1, use shmem, erroneous
         // c_gather_anchor<T>(shmem.data, anchor, anchor_leap);
         // version 2, use global mem, correct
         c_gather_anchor<T>(data, data_size, data_leap, anchor, anchor_leap);
 
-        cusz::device_api::spline3d_layout2_interpolate<T, E, FP, LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
+        cusz::device_api::spline3d_layout2_interpolate<T, T, FP, LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, eb_r, ebx2, radius);
-        shmem2global_32x8x8data<E, LINEAR_BLOCK_SIZE>(shmem.ectrl, ectrl, ectrl_size, ectrl_leap);
+        shmem2global_32x8x8data<T, E, LINEAR_BLOCK_SIZE>(shmem.ectrl, ectrl, ectrl_size, ectrl_leap);
     }
 }
 
@@ -778,15 +769,15 @@ __global__ void cusz::x_spline3d_infprecis_32x8x8data(
     using T = typename std::remove_pointer<TITER>::type;
 
     __shared__ struct {
-        E ectrl[9][9][33];
         T data[9][9][33];
+        T ectrl[9][9][33];
     } shmem;
 
-    x_reset_scratch_33x9x9data<T, E, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, anchor, anchor_size, anchor_leap);
-    global2shmem_33x9x9data<E, LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, shmem.ectrl);
-    cusz::device_api::spline3d_layout2_interpolate<T, E, FP, LINEAR_BLOCK_SIZE, SPLINE3_DECOMPR, false>(
+    x_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, anchor, anchor_size, anchor_leap);
+    global2shmem_33x9x9data<E, T, LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, shmem.ectrl);
+    cusz::device_api::spline3d_layout2_interpolate<T, T, FP, LINEAR_BLOCK_SIZE, SPLINE3_DECOMPR, false>(
         shmem.data, shmem.ectrl, eb_r, ebx2, radius);
-    shmem2global_32x8x8data<T, LINEAR_BLOCK_SIZE>(shmem.data, data, data_size, data_leap);
+    shmem2global_32x8x8data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, data, data_size, data_leap);
 }
 
 #undef TIX
@@ -798,154 +789,5 @@ __global__ void cusz::x_spline3d_infprecis_32x8x8data(
 #undef BDX
 #undef BDY
 #undef BDZ
-
-template <typename T, typename E, typename FP, bool NO_R_SEPARATE>
-void launch_construct_Spline3(
-    T*           data,
-    dim3 const   len3,
-    T*           anchor,
-    dim3 const   an_len3,
-    E*           ectrl,
-    dim3 const   ec_len3,
-    double const eb,
-    int const    radius,
-    float&       time_elapsed,
-    cudaStream_t stream)
-{
-    auto divide3 = [](dim3 len, dim3 sublen) {
-        return dim3(
-            (len.x - 1) / sublen.x + 1,  //
-            (len.y - 1) / sublen.y + 1,  //
-            (len.z - 1) / sublen.z + 1);
-    };
-
-    auto ndim = [&]() {
-        if (len3.z == 1 and len3.y == 1)
-            return 1;
-        else if (len3.z == 1 and len3.y != 1)
-            return 2;
-        else
-            return 3;
-    };
-
-    constexpr auto SUBLEN_3D = dim3(32, 8, 8);
-    constexpr auto SEQ_3D    = dim3(1, 8, 1);
-    constexpr auto BLOCK_3D  = dim3(256, 1, 1);
-    auto           GRID_3D   = divide3(len3, SUBLEN_3D);
-
-    {
-        constexpr auto SUBLEN_TOTAL = SUBLEN_3D.x * SUBLEN_3D.y * SUBLEN_3D.z;
-        constexpr auto SEQ_TOTAL    = SEQ_3D.x * SEQ_3D.y * SEQ_3D.z;
-        constexpr auto BLOCK_TOTAL  = BLOCK_3D.x * BLOCK_3D.y * BLOCK_3D.z;
-
-        // static_assert(SUBLEN_TOTAL / SEQ_TOTAL == BLOCK_TOTAL, "parallelism does not match!");
-        if (SUBLEN_TOTAL / SEQ_TOTAL != BLOCK_TOTAL) throw std::runtime_error("parallelism does not match!");
-    }
-
-    ////////////////////////////////////////
-
-    auto ebx2     = eb * 2;
-    auto eb_r     = 1 / eb;
-    auto leap3    = dim3(1, len3.x, len3.x * len3.y);
-    auto ec_leap3 = dim3(1, ec_len3.x, ec_len3.x * ec_len3.y);
-    auto an_leap3 = dim3(1, an_len3.x, an_len3.x * an_len3.y);
-
-    CREATE_CUDAEVENT_PAIR;
-    START_CUDAEVENT_RECORDING(stream);
-
-    auto d = ndim();
-
-    if (d == 1) {  //
-        throw std::runtime_error("Spline1 not implemented");
-    }
-    else if (d == 2) {
-        throw std::runtime_error("Spline2 not implemented");
-    }
-    else if (d == 3) {
-        cusz::c_spline3d_infprecis_32x8x8data<T*, E*, float, 256, false>  //
-            <<<GRID_3D, BLOCK_3D, 0, stream>>>                            //
-            (data, len3, leap3,                                           //
-             ectrl, ec_len3, ec_leap3,                                    //
-             anchor, an_leap3,                                            //
-             eb_r, ebx2, radius);
-    }
-
-    STOP_CUDAEVENT_RECORDING(stream);
-    CHECK_CUDA(cudaStreamSynchronize(stream));
-    TIME_ELAPSED_CUDAEVENT(&time_elapsed);
-
-    DESTROY_CUDAEVENT_PAIR;
-}
-
-template <typename T, typename E, typename FP>
-void launch_reconstruct_Spline3(
-    T*           xdata,
-    dim3 const   len3,
-    T*           anchor,
-    dim3 const   an_len3,
-    E*           ectrl,
-    dim3 const   ec_len3,
-    double const eb,
-    int const    radius,
-    float&       time_elapsed,
-    cudaStream_t stream)
-{
-    auto divide3 = [](dim3 len, dim3 sublen) {
-        return dim3(
-            (len.x - 1) / sublen.x + 1,  //
-            (len.y - 1) / sublen.y + 1,  //
-            (len.z - 1) / sublen.z + 1);
-    };
-
-    /*
-    auto ndim = [&]() {
-        if (len3.z == 1 and len3.y == 1)
-            return 1;
-        else if (len3.z == 1 and len3.y != 1)
-            return 2;
-        else
-            return 3;
-    };
-     */
-
-    constexpr auto SUBLEN_3D = dim3(32, 8, 8);
-    constexpr auto SEQ_3D    = dim3(1, 8, 1);
-    constexpr auto BLOCK_3D  = dim3(256, 1, 1);
-    auto           GRID_3D   = divide3(len3, SUBLEN_3D);
-
-    {
-        constexpr auto SUBLEN_TOTAL = SUBLEN_3D.x * SUBLEN_3D.y * SUBLEN_3D.z;
-        constexpr auto SEQ_TOTAL    = SEQ_3D.x * SEQ_3D.y * SEQ_3D.z;
-        constexpr auto BLOCK_TOTAL  = BLOCK_3D.x * BLOCK_3D.y * BLOCK_3D.z;
-
-        // static_assert(SUBLEN_TOTAL / SEQ_TOTAL == BLOCK_TOTAL, "parallelism does not match!");
-        if (SUBLEN_TOTAL / SEQ_TOTAL != BLOCK_TOTAL) throw std::runtime_error("parallelism does not match!");
-    }
-
-    ////////////////////////////////////////
-
-    auto ebx2     = eb * 2;
-    auto eb_r     = 1 / eb;
-    auto leap3    = dim3(1, len3.x, len3.x * len3.y);
-    auto ec_leap3 = dim3(1, ec_len3.x, ec_len3.x * ec_len3.y);
-    auto an_leap3 = dim3(1, an_len3.x, an_len3.x * an_len3.y);
-
-    CREATE_CUDAEVENT_PAIR;
-    START_CUDAEVENT_RECORDING(stream);
-
-    cusz::x_spline3d_infprecis_32x8x8data<E*, T*, float, 256>  //
-        <<<GRID_3D, BLOCK_3D, 0, stream>>>                     //
-        (ectrl, ec_len3, ec_leap3,                             //
-         anchor, an_len3, an_leap3,                            //
-         xdata, len3, leap3,                                   //
-         eb_r, ebx2, radius);
-
-    STOP_CUDAEVENT_RECORDING(stream);
-
-    CHECK_CUDA(cudaStreamSynchronize(stream));
-
-    TIME_ELAPSED_CUDAEVENT(&time_elapsed);
-    DESTROY_CUDAEVENT_PAIR;
-}
 
 #endif
