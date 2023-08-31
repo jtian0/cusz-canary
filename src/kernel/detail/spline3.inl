@@ -434,7 +434,7 @@ __forceinline__ __device__ void interpolate_stage(
                 auto z    = zmap(itiz, unit);
                 run(x, y, z);
             }
-        }
+        //}
         //may have bug    
         /*
         else{
