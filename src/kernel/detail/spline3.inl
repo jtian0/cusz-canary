@@ -422,7 +422,7 @@ __forceinline__ __device__ void interpolate_stage(
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
                 if(fabs(pred)>=3)
-                    printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+                    printf("%d %d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",unit,CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
               
                 s_data[z][y][x]  = pred + (code - radius) * ebx2;
                 
@@ -434,7 +434,7 @@ __forceinline__ __device__ void interpolate_stage(
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
                     if(fabs(s_data[z][y][x])>=3)
 
-                    printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+                    printf("%d %d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",unit,CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
                // }
             }
         }
@@ -681,7 +681,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
             T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
-            true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
+            true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_EXCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
         //may have bug end
@@ -698,7 +698,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
        
         interpolate_stage<
             T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-            false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9, BORDER_INCLUSIVE, WORKFLOW>(
+            false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9, BORDER_EXCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
     }
