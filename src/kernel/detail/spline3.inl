@@ -366,7 +366,7 @@ __forceinline__ __device__ void interpolate_stage(
                 }
                 if CONSTEXPR (YELLOW) {  //
                     if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
-                        printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]);
+                        printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
                     }
                     if(y>=3*unit and y+3*unit<=BLOCK8 )
                         pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
@@ -379,8 +379,8 @@ __forceinline__ __device__ void interpolate_stage(
                 }
 
                 if CONSTEXPR (HOLLOW) {  //
-                    if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
-                        printf("%d %d %d\n",x,y,z);
+                    //if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
+                    //    printf("%d %d %d\n",x,y,z);
                     if(x>=3*unit and x+3*unit<=BLOCK32 )
                         pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
                     else if (x+3*unit<=BLOCK32)
@@ -451,6 +451,8 @@ __forceinline__ __device__ void interpolate_stage(
                 auto x    = xmap(itix, unit);
                 auto y    = ymap(itiy, unit);
                 auto z    = zmap(itiz, unit);
+                if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
+                        printf("%d %d %d %d %d %d %d\n"_tix,itix,itiy,itiz,x,y,z);
                 run(x, y, z);
             }
         //}
