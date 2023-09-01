@@ -43,7 +43,7 @@ class pszmempool_cxx {
 
  public:
   // ctor, dtor
-  pszmempool_cxx(u4 _x, int _radius = 512, u4 _y = 1, u4 _z = 1);
+  pszmempool_cxx(u4 _x, int _radius = 32768, u4 _y = 1, u4 _z = 1);
   ~pszmempool_cxx();
   // utils
   pszmempool_cxx *clear_buffer();
