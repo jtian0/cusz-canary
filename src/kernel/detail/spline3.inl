@@ -885,9 +885,12 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
 
         c_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, radius);
         if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-            printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
+            printf("reset\n");
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+        //    printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
         global2shmem_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(data, data_size, data_leap, shmem.data);
-
+        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+            printf("g2s\n");
         // version 1, use shmem, erroneous
         // c_gather_anchor<T>(shmem.data, anchor, anchor_leap);
         // version 2, use global mem, correct
@@ -896,8 +899,12 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius);
         if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-            printf("esz: %d %d %d\n",ectrl_size.x,ectrl_size.y,ectrl_size.z);
+            printf("interp\n");
+        //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+         //   printf("esz: %d %d %d\n",ectrl_size.x,ectrl_size.y,ectrl_size.z);
         shmem2global_32x8x8data<T, E, LINEAR_BLOCK_SIZE>(shmem.ectrl, ectrl, ectrl_size, ectrl_leap);
+        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+            printf("s2g\n");
     }
 }
 
@@ -930,13 +937,13 @@ __global__ void cusz::x_spline3d_infprecis_32x8x8data(
     } shmem;
 
     x_reset_scratch_33x9x9data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, shmem.ectrl, anchor, anchor_size, anchor_leap);
-    if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-            printf("esz: %d %d %d\n",ectrl_size.x,ectrl_size.y,ectrl_size.z);
+    //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+    //        printf("esz: %d %d %d\n",ectrl_size.x,ectrl_size.y,ectrl_size.z);
     global2shmem_33x9x9data<E, T, LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, shmem.ectrl);
     cusz::device_api::spline3d_layout2_interpolate<T, T, FP, LINEAR_BLOCK_SIZE, SPLINE3_DECOMPR, false>(
         shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius);
-    if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
-            printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
+    //if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+    //        printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
     shmem2global_32x8x8data<T, T, LINEAR_BLOCK_SIZE>(shmem.data, data, data_size, data_leap);
 }
 
