@@ -289,7 +289,7 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
         if (gx < data_size.x and gy < data_size.y and gz < data_size.z) s_data[z][y][x] = data[gid];
 
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
-            printf("1084 %d %d \n",s_data[z][y][x],data[gid]);
+            printf("g2s1084 %d %d \n",s_data[z][y][x],data[gid]);
         }
     }
     __syncthreads();
@@ -314,7 +314,7 @@ shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size
         if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) dram_buf[gid] = s_buf[z][y][x];
 
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
-            printf("1084 %d %d \n",s_buf[z][y][x],dram_buf[gid]);
+            printf("s2g1084 %d %d \n",s_buf[z][y][x],dram_buf[gid]);
         }
     }
     __syncthreads();
