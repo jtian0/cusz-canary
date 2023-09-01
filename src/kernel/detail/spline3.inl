@@ -402,11 +402,10 @@ __forceinline__ __device__ void interpolate_stage(
                 }
                 
             }
-            if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
-                printf("%d %d %d %.2e %.2e\n",x,y,z,s_data[z][y][x],pred);
-            }
+            
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
+                
                 auto          err = s_data[z][y][x] - pred;
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
@@ -416,11 +415,20 @@ __forceinline__ __device__ void interpolate_stage(
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
+                if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
+                    printf("%d %d %d %.2e %.2e ",x,y,z,s_data[z][y][x],pred,code);
+                }
                 s_data[z][y][x]  = pred + (code - radius) * ebx2;
+                if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE))
+                    printf("%.2e\n",s_data[z][y][x]);
+
             }
             else {  // TODO == DECOMPRESSS and static_assert
                 auto code       = s_ectrl[z][y][x];
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
+                if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
+                    printf("%d %d %d %.2e %.2e\n",x,y,z,pred,code,s_data[z][y][x]);
+                }
             }
         }
     };
