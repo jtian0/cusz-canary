@@ -124,10 +124,10 @@ Compressor<C>* Compressor<C>::compress(
     spline_construct(
         mem->od, mem->ac, mem->es, /* placeholder */ (void*)mem->compact, eb,
         radius, &time_pred, stream);
-   // printf("interp\n");
+    printf("interp\n");
     psz::histogram<PROPER_GPU_BACKEND, E>(
         mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
-    // printf("histo\n");
+     printf("histo\n");
    // psz::histsp<PROPER_GPU_BACKEND, E>(
   //      mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
    // printf("histsp\n");
@@ -140,9 +140,9 @@ Compressor<C>* Compressor<C>::compress(
     // }
 
     codec->build_codebook(mem->ht, booklen, stream);
-   // printf("codebook\n");
+    printf("codebook\n");
     codec->encode(mem->ectrl_spl(), elen, &d_codec_out, &codec_outlen, stream);
-  //  printf("encode\n");
+    printf("encode\n");
 
 #else
     throw runtime_error(
