@@ -44,6 +44,7 @@ using STRIDE3 = dim3;
 
 constexpr int BLOCK8  = 8;
 constexpr int BLOCK32 = 32;
+constexpr int DEFAULT_LINEAR_BLOCK_SIZE = 384;
 
 #define SHM_ERROR s_ectrl
 
@@ -57,7 +58,7 @@ template <
     typename TITER,
     typename EITER,
     typename FP            = float,
-    int  LINEAR_BLOCK_SIZE = 256>
+    int  LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __global__ void c_spline3d_infprecis_32x8x8data(
     TITER   data,
     DIM3    data_size,
@@ -75,7 +76,7 @@ template <
     typename EITER,
     typename TITER,
     typename FP           = float,
-    int LINEAR_BLOCK_SIZE = 256>
+    int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __global__ void x_spline3d_infprecis_32x8x8data(
     EITER   ectrl,        // input 1
     DIM3    ectrl_size,   //
@@ -167,7 +168,7 @@ spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool com
     printf("\nGPU print end\n\n");
 }
 
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], int radius)
 {
     // alternatively, reinterprete cast volatile T?[][][] to 1D
@@ -189,7 +190,7 @@ __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatil
     __syncthreads();
 }
 
-template <typename T1, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1* anchor, STRIDE3 anchor_leap)
 {
     auto x = (TIX % 32) + BIX * 32;
@@ -209,7 +210,7 @@ __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1*
 
 /*
  * use shmem, erroneous
-template <typename T1, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void c_gather_anchor(volatile T1 s_data[9][9][33], T1* anchor, STRIDE3 anchor_leap)
 {
     constexpr auto NUM_ITERS = 33 * 9 * 9 / LINEAR_BLOCK_SIZE + 1;  // 11 iterations
@@ -233,7 +234,7 @@ __device__ void c_gather_anchor(volatile T1 s_data[9][9][33], T1* anchor, STRIDE
 }
 */
 
-template <typename T1, typename T2 = T1, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, typename T2 = T1, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void x_reset_scratch_33x9x9data(
     volatile T1 s_xdata[9][9][33],
     volatile T2 s_ectrl[9][9][33],
@@ -269,7 +270,7 @@ __device__ void x_reset_scratch_33x9x9data(
     __syncthreads();
 }
 
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE>
 __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[9][9][33])
 {
     constexpr auto TOTAL = 33 * 9 * 9;
@@ -289,7 +290,7 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
 }
 
 // dram_outlier should be the same in type with shared memory buf
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256, bool WITH_COMPACT = false>
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK_SIZE, bool WITH_COMPACT = false>
 __device__ void
 shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, T1* dram_outlier = nullptr, uint32_t* dram_idx = nullptr)
 {
