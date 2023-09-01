@@ -312,6 +312,10 @@ shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size
         auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
 
         if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) dram_buf[gid] = s_buf[z][y][x];
+
+        if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
+            printf("1084 %d %d \n",s_buf[z][y][x],dram_buf[gid]);
+        }
     }
     __syncthreads();
 }
