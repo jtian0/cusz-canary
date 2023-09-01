@@ -402,6 +402,9 @@ __forceinline__ __device__ void interpolate_stage(
                 }
                 
             }
+            if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
+                printf("%d %d %d %.2e %.2e",x,y,z,s_data[z][y][x],pred)
+            }
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
                 auto          err = s_data[z][y][x] - pred;
@@ -702,7 +705,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
      test only: print a block
      ******************************************************************************/
      //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_ectrl); }
-     if (TIX == 0 and BIX == 4 and BIY == 20 and BIZ == 20) { spline3d_print_block_from_GPU(s_data); }
+   //  if (TIX == 0 and BIX == 4 and BIY == 20 and BIZ == 20) { spline3d_print_block_from_GPU(s_data); }
 }
 
 /********************************************************************************
