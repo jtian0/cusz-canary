@@ -99,7 +99,7 @@ void spline3_reconstruct_raw(
   CREATE_GPUEVENT_PAIR;
   START_GPUEVENT_RECORDING(stream);
 
-  cusz::x_spline3d_infprecis_32x8x8data<E*, T*, float, DEFAUL_BLOCK_SIZE>  //
+  cusz::x_spline3d_infprecis_32x8x8data<E*, T*, float, DEFAULT_BLOCK_SIZE>  //
       <<<GRID_3D, BLOCK_3D, 0, (GpuStreamT)stream>>>         //
       (ectrl, ec_len3, ec_leap3,                             //
        anchor, an_len3, an_leap3,                            //
