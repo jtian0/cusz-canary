@@ -443,7 +443,7 @@ __forceinline__ __device__ void interpolate_stage(
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
 
                 if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
-                        printf("%.2e %.2e %.2e\n",pred,code,s_data[z + unit][y][x]);
+                        printf("%.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
 
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
                //     if(fabs(s_data[z][y][x])>=3)
