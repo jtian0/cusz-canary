@@ -35,7 +35,10 @@
 #define BIZ blockIdx.z
 #define BDX blockDim.x
 #define BDY blockDim.y
-#define BDZ blockDim.
+#define BDZ blockDim.z
+#define GDX gridDim.x
+#define GDY gridDim.y
+#define GDZ gridDim.z
 
 using DIM     = unsigned int;
 using STRIDE  = unsigned int;
@@ -304,12 +307,16 @@ template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK
 __device__ void
 shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, T1* dram_outlier = nullptr, uint32_t* dram_idx = nullptr)
 {
-    constexpr auto TOTAL = 33 * 9 * 9;
+    auto x_size=BLOCK32+(BIX==GDX-1);
+    auto y_size=BLOCK8+(BIY==GDY-1);
+    auto z_size=BLOCK8+(BIZ==GDZ-1);
+    //constexpr auto TOTAL = 32 * 8 * 8;
+    auto TOTAL = x_size * y_size * z_size;
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-        auto x   = (_tix % 33);
-        auto y   = (_tix / 33) % 9;
-        auto z   = (_tix / 33) / 9;
+        auto x   = (_tix % x_size);
+        auto y   = (_tix / x_size) % y_size;
+        auto z   = (_tix / x_size) / y_size;
         auto gx  = (x + BIX * BLOCK32);
         auto gy  = (y + BIY * BLOCK8);
         auto gz  = (z + BIZ * BLOCK8);
@@ -855,5 +862,8 @@ __global__ void cusz::x_spline3d_infprecis_32x8x8data(
 #undef BDX
 #undef BDY
 #undef BDZ
+#undef GDX
+#undef GDY
+#undef GDZ
 
 #endif
