@@ -304,12 +304,12 @@ template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = DEFAULT_LINEAR_BLOCK
 __device__ void
 shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, T1* dram_outlier = nullptr, uint32_t* dram_idx = nullptr)
 {
-    constexpr auto TOTAL = 32 * 8 * 8;
+    constexpr auto TOTAL = 33 * 9 * 9;
 
     for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-        auto x   = (_tix % 32);
-        auto y   = (_tix / 32) % 8;
-        auto z   = (_tix / 32) / 8;
+        auto x   = (_tix % 33);
+        auto y   = (_tix / 33) % 9;
+        auto z   = (_tix / 33) / 9;
         auto gx  = (x + BIX * BLOCK32);
         auto gy  = (y + BIY * BLOCK8);
         auto gz  = (z + BIZ * BLOCK8);
@@ -322,7 +322,7 @@ shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size
         }
 
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==4 and z==8){
-            printf("s2g1084 %d %d \n",s_buf[z][y][x],dram_buf[gid]);
+            printf("s2g1048 %d %d \n",s_buf[z][y][x],dram_buf[gid]);
         }
     }
     __syncthreads();
@@ -372,14 +372,14 @@ __forceinline__ __device__ void interpolate_stage(
 
             //if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (YELLOW)) )
             //    printf("%d %d %d\n",x,y,z);
-
+            /*
              if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==4)
                         printf("444 %.2e %.2e \n",s_data[z - unit][y][x],s_data[z + unit][y][x]);
 
             if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
                         printf("440 %.2e %.2e \n",s_data[z][y - unit][x],s_data[z][y + unit][x]);
             if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==8 and z==0)
-                        printf("480 %.2e %.2e \n",s_data[z][y ][x- unit],s_data[z][y ][x+ unit]);
+                        printf("480 %.2e %.2e \n",s_data[z][y ][x- unit],s_data[z][y ][x+ unit]);*/
                   //  }
             if(cubic){
                 if CONSTEXPR (BLUE) {  //
@@ -451,10 +451,12 @@ __forceinline__ __device__ void interpolate_stage(
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
+                /*
                   if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
                         printf("440pred %.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
                     if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==8 and z==0)
                         printf("480pred %.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
+                        */
                // if(fabs(pred)>=3)
                //     printf("%d %d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",unit,CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
               
@@ -465,11 +467,12 @@ __forceinline__ __device__ void interpolate_stage(
             else {  // TODO == DECOMPRESSS and static_assert
                 auto code       = s_ectrl[z][y][x];
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
-
+                /*
                 if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
                         printf("440pred %.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
                     if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==8 and z==0)
                         printf("480pred %.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
+                        */
 
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
                //     if(fabs(s_data[z][y][x])>=3)
@@ -762,7 +765,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     /******************************************************************************
      test only: print a block
      ******************************************************************************/
-     if (TIX == 0 and BIX == 7 and BIY == 47 and BIZ == 15) { spline3d_print_block_from_GPU(s_ectrl); }
+    // if (TIX == 0 and BIX == 7 and BIY == 47 and BIZ == 15) { spline3d_print_block_from_GPU(s_ectrl); }
    //  if (TIX == 0 and BIX == 4 and BIY == 20 and BIZ == 20) { spline3d_print_block_from_GPU(s_data); }
 }
 
