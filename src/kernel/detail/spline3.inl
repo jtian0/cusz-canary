@@ -622,7 +622,7 @@ template <typename T1, typename T2, typename FP,int LINEAR_BLOCK_SIZE, bool WORK
 __device__ void cusz::device_api::spline3d_layout2_interpolate(
     volatile T1 s_data[9][9][33],
     volatile T2 s_ectrl[9][9][33],
-     DIM3    data_size，
+     DIM3    data_size,
     FP          eb_r,
     FP          ebx2,
     int         radius
