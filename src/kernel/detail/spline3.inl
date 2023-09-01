@@ -421,9 +421,9 @@ __forceinline__ __device__ void interpolate_stage(
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
-                //if(fabs(pred)>=0.05){
-                //    printf("%d %d %d %.2e %.2e %2.e\n",x,y,z,s_data[z][y][x],pred,code,pred + (code - radius) * ebx2);
-                //}
+                if(fabs(pred)>=3)
+                    printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+              
                 s_data[z][y][x]  = pred + (code - radius) * ebx2;
                 
 
@@ -432,9 +432,9 @@ __forceinline__ __device__ void interpolate_stage(
                 auto code       = s_ectrl[z][y][x];
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
-                    //if(fabs(s_data[z][y][x])>=0.05)
+                    if(fabs(s_data[z][y][x])>=3)
 
-                    //printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+                    printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
                // }
             }
         }
