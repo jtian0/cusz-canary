@@ -455,8 +455,7 @@ __forceinline__ __device__ void interpolate_stage(
                 auto x    = xmap(itix, unit);
                 auto y    = ymap(itiy, unit);
                 auto z    = zmap(itiz, unit);
-                //if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and CONSTEXPR (HOLLOW))
-               //         printf("%d %d %d %d %d %d %d\n",_tix,itix,itiy,itiz,x,y,z);
+                
                 run(x, y, z);
             }
         //}
@@ -483,6 +482,9 @@ __forceinline__ __device__ void interpolate_stage(
         auto x    = xmap(itix, unit);
         auto y    = ymap(itiy, unit);
         auto z    = zmap(itiz, unit);
+
+        if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (HOLLOW)) or (CONSTEXPR (YELLOW)) )
+            printf("%d %d %d %d %d %d %d\n",_tix,itix,itiy,itiz,x,y,z);
 
      //   printf("%d %d %d\n", x,y,z);
         run(x, y, z);
