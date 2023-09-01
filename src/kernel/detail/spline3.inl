@@ -353,6 +353,7 @@ __forceinline__ __device__ void interpolate_stage(
             T1 pred = 0;
             if(cubic){
                 if CONSTEXPR (BLUE) {  //
+
                     if(z>=3*unit and z+3*unit<=BLOCK8 )
                         pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
                     else if (z+3*unit<=BLOCK8)
@@ -364,6 +365,9 @@ __forceinline__ __device__ void interpolate_stage(
                         pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
                 }
                 if CONSTEXPR (YELLOW) {  //
+                    if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
+                        printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x],s_data[z][y + 3*unit][x]);
+                    }
                     if(y>=3*unit and y+3*unit<=BLOCK8 )
                         pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
                     else if (y+3*unit<=BLOCK8)
@@ -375,6 +379,8 @@ __forceinline__ __device__ void interpolate_stage(
                 }
 
                 if CONSTEXPR (HOLLOW) {  //
+                    if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
+                        printf("%d %d %d\n",x,y,z);
                     if(x>=3*unit and x+3*unit<=BLOCK32 )
                         pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
                     else if (x+3*unit<=BLOCK32)
@@ -426,9 +432,9 @@ __forceinline__ __device__ void interpolate_stage(
                 auto code       = s_ectrl[z][y][x];
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
-                    if(fabs(s_data[z][y][x])>=0.05)
+                    //if(fabs(s_data[z][y][x])>=0.05)
 
-                    printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+                    //printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
                // }
             }
         }
