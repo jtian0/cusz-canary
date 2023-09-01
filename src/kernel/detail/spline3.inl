@@ -425,9 +425,9 @@ __forceinline__ __device__ void interpolate_stage(
             else {  // TODO == DECOMPRESSS and static_assert
                 auto code       = s_ectrl[z][y][x];
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
-                if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
-                    printf("%d %d %d %.2e %.2e %.2e\n",x,y,z,pred,code,s_data[z][y][x]);
-                }
+                //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
+                    printf("%d %d %d %d %d %d %.2e %.2e %.2e\n",BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+               // }
             }
         }
     };
