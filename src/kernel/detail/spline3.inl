@@ -365,9 +365,9 @@ __forceinline__ __device__ void interpolate_stage(
                         pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
                 }
                 if CONSTEXPR (YELLOW) {  //
-                    if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
-                        printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
-                    }
+                   // if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
+                   //     printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
+                  //  }
                     if(y>=3*unit and y+3*unit<=BLOCK8 )
                         pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
                     else if (y+3*unit<=BLOCK8)
@@ -421,9 +421,9 @@ __forceinline__ __device__ void interpolate_stage(
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
-                if(fabs(pred)>=0.05){
-                    printf("%d %d %d %.2e %.2e %2.e\n",x,y,z,s_data[z][y][x],pred,code,pred + (code - radius) * ebx2);
-                }
+                //if(fabs(pred)>=0.05){
+                //    printf("%d %d %d %.2e %.2e %2.e\n",x,y,z,s_data[z][y][x],pred,code,pred + (code - radius) * ebx2);
+                //}
                 s_data[z][y][x]  = pred + (code - radius) * ebx2;
                 
 
@@ -451,8 +451,8 @@ __forceinline__ __device__ void interpolate_stage(
                 auto x    = xmap(itix, unit);
                 auto y    = ymap(itiy, unit);
                 auto z    = zmap(itiz, unit);
-                if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and CONSTEXPR (HOLLOW))
-                        printf("%d %d %d %d %d %d %d\n",_tix,itix,itiy,itiz,x,y,z);
+                //if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and CONSTEXPR (HOLLOW))
+               //         printf("%d %d %d %d %d %d %d\n",_tix,itix,itiy,itiz,x,y,z);
                 run(x, y, z);
             }
         //}
@@ -673,7 +673,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
         //may have bug 
         interpolate_stage<
             T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
-            false, false, true, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_EXCLUSIVE, WORKFLOW>(
+            false, false, true, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
             T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
@@ -681,7 +681,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
             s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
             T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
-            true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
+            true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_EXCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
         //may have bug end
