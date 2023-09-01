@@ -360,6 +360,8 @@ __forceinline__ __device__ void interpolate_stage(
 
             if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
                         printf("440 %.2e %.2e \n",s_data[z][y - unit][x],s_data[z][y + unit][x]);
+            if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==8 and z==0)
+                        printf("480 %.2e %.2e \n",s_data[z][y ][x- unit],s_data[z][y ][x+ unit]);
                   //  }
             if(cubic){
                 if CONSTEXPR (BLUE) {  //
@@ -443,7 +445,9 @@ __forceinline__ __device__ void interpolate_stage(
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
 
                 if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
-                        printf("%.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
+                        printf("440pred %.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
+                    if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==8 and z==0)
+                        printf("480pred %.2e %.2e %.2e\n",pred,code,s_data[z][y][x]);
 
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
                //     if(fabs(s_data[z][y][x])>=3)
