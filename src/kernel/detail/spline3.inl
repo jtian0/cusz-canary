@@ -352,7 +352,7 @@ __forceinline__ __device__ void interpolate_stage(
         if (xyz33x9x9_predicate<BORDER_INCLUSIVE>(x, y, z)) {
             T1 pred = 0;
 
-            if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (HOLLOW)) )
+            if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (YELLOW)) )
                 printf("%d %d %d\n",x,y,z);
 
              if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==4)
