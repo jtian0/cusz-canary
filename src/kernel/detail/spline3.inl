@@ -416,7 +416,7 @@ __forceinline__ __device__ void interpolate_stage(
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
                 if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
-                    printf("%d %d %d %.2e %.2e %2.e",x,y,z,s_data[z][y][x],pred,code,pred + (code - radius) * ebx2);
+                    printf("%d %d %d %.2e %.2e %2.e\n",x,y,z,s_data[z][y][x],pred,code,pred + (code - radius) * ebx2);
                 }
                 s_data[z][y][x]  = pred + (code - radius) * ebx2;
                 
