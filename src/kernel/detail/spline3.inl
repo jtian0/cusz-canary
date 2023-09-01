@@ -117,14 +117,16 @@ spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9
 
 namespace {
 
-template <bool INCLUSIVE = true>
+template <bool INCLUSIVE = true, DIM3 data_size>
 __forceinline__ __device__ bool xyz33x9x9_predicate(unsigned int x, unsigned int y, unsigned int z)
 {
     if CONSTEXPR (INCLUSIVE) {  //
-        return x <= 32 and y <= 8 and z <= 8;
+
+        
+            return (x <= 32 and y <= 8 and z <= 8) and BIX*BLOCK32+x<data_size.x and BIY*BLOCK8+y<data_size.y and BIZ*BLOCK8+z<data_size.z;
     }
     else {
-        return x < 32 and y < 8 and z < 8;
+        return x < 32 and y < 8 and z < 8 and BIX*BLOCK32+x<data_size.x and BIY*BLOCK8+y<data_size.y and BIZ*BLOCK8+z<data_size.z;
     }
 }
 
@@ -339,6 +341,7 @@ template <
     typename T1,
     typename T2,
     typename FP,
+    DIM3    data_size,
     typename LAMBDAX,
     typename LAMBDAY,
     typename LAMBDAZ,
@@ -374,7 +377,7 @@ __forceinline__ __device__ void interpolate_stage(
 
         
 
-        if (xyz33x9x9_predicate<BORDER_INCLUSIVE>(x, y, z)) {
+        if (xyz33x9x9_predicate<BORDER_INCLUSIVE,data_size>(x, y, z)) {
             T1 pred = 0;
 
             //if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (YELLOW)) )
@@ -388,60 +391,133 @@ __forceinline__ __device__ void interpolate_stage(
             if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==8 and z==0)
                         printf("480 %.2e %.2e \n",s_data[z][y ][x- unit],s_data[z][y ][x+ unit]);*/
                   //  }
+            auto global_x=BIX*BLOCK32+x, global_y=BIY*BLOCK8+y, global_z=BIZ*BLOCK8+;
             if(cubic){
                 if CONSTEXPR (BLUE) {  //
 
-                    if(z>=3*unit and z+3*unit<=BLOCK8 )
-                        pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
-                    else if (z+3*unit<=BLOCK8)
-                        pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
-                    else if (z>=3*unit)
-                        pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+                    if(BIZ!=GDZ-1){
 
-                    else
-                        pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                        if(z>=3*unit and z+3*unit<=BLOCK8  )
+                            pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                        else if (z+3*unit<=BLOCK8)
+                            pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                        else if (z>=3*unit)
+                            pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+
+                        else
+                            pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                    }
+                    else{
+                        if(z>=3*unit){
+                            if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
+                                pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                            else if (global_z+unit<data_size.z)
+                                pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+                            else
+                                pred=s_data[z - unit][y][x];
+
+                        }
+                        else{
+                            if(z+3*unit<=BLOCK8 and global_z+3*unit<data_size.z)
+                                pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                            else if (global_z+unit<data_size.z)
+                                pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                            else
+                                pred=s_data[z - unit][y][x];
+                        } 
+                    }
                 }
                 if CONSTEXPR (YELLOW) {  //
                    // if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1 and x==29 and y==7 and z==0){
                    //     printf("%.2e %.2e %.2e %.2e\n",s_data[z ][y- 3*unit][x],s_data[z ][y- unit][x],s_data[z ][y+ unit][x]);
                   //  }
-                    if(y>=3*unit and y+3*unit<=BLOCK8 )
-                        pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
-                    else if (y+3*unit<=BLOCK8)
-                        pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
-                    else if (y>=3*unit)
-                        pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
-                    else
-                        pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                    if(BIY!=GDY-1){
+                        if(y>=3*unit and y+3*unit<=BLOCK8 )
+                            pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                        else if (y+3*unit<=BLOCK8)
+                            pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                        else if (y>=3*unit)
+                            pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                        else
+                            pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                    }
+                    else{
+                        if(y>=3*unit){
+                            if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
+                                pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z][y - unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z ][y+ 3*unit][x]) / 16;
+                            else if (global_y+unit<data_size.y)
+                                pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z ][y- unit][x] + 3*s_data[z ][y+ unit][x]) / 8;
+                            else
+                                pred=s_data[z ][y- unit][x];
+
+                        }
+                        else{
+                            if(y+3*unit<=BLOCK8 and global_y+3*unit<data_size.y)
+                                pred = (3*s_data[z][y - unit][x] + 6*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                            else if (global_y+unit<data_size.y)
+                                pred = (s_data[z ][y- unit][x] + s_data[z][y + unit][x]) / 2;
+                            else
+                                pred=s_data[z ][y- unit][x];
+                        } 
+                    }
                 }
 
                 if CONSTEXPR (HOLLOW) {  //
                     //if(BIX == 5 and BIY == 22 and BIZ == 6 and unit==1)
                     //    printf("%d %d %d\n",x,y,z);
-                    if(x>=3*unit and x+3*unit<=BLOCK32 )
-                        pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
-                    else if (x+3*unit<=BLOCK32)
-                        pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
-                    else if (x>=3*unit)
-                        pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
-                    else
-                        pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                    if(BIX!=GDX-1){
+                        if(x>=3*unit and x+3*unit<=BLOCK32 )
+                            pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
+                        else if (x+3*unit<=BLOCK32)
+                            pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
+                        else if (x>=3*unit)
+                            pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
+                        else
+                            pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                    }
+                    else{
+                        if(x>=3*unit){
+                            if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
+                                pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z][y ][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x+ 3*unit]) / 16;
+                            else if (global_x+unit<data_size.x)
+                                pred = (-s_data[z ][y][x- 3*unit]+6*s_data[z ][y][x- unit] + 3*s_data[z ][y][x+ unit]) / 8;
+                            else
+                                pred=s_data[z ][y][x- unit];
+
+                        }
+                        else{
+                            if(x+3*unit<=BLOCK32 and global_x+3*unit<data_size.x)
+                                pred = (3*s_data[z][y ][x- unit] + 6*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 8;
+                            else if (global_x+unit<data_size.x)
+                                pred = (s_data[z ][y][x- unit] + s_data[z][y ][x+ unit]) / 2;
+                            else
+                                pred=s_data[z ][y][x- unit];
+                        } 
+                    }
                 }
                 
             }
             else{
                 if CONSTEXPR (BLUE) {  //
+                    if(global_z+unit<data_size.z)
                     
                         pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                    else
+                        pred=s_data[z - unit][y][x];
                 }
                 if CONSTEXPR (YELLOW) {  //
+                    if(global_y+unit<data_size.y)
                     
                         pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                    else
+                        pred = s_data[z][y - unit][x];
                 }
 
                 if CONSTEXPR (HOLLOW) {  //
-                    
+                    if(global_x+unit<data_size.x)
                         pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                    else
+                        pred = s_data[z][y][x - unit];
                 }
                 
             }
@@ -541,7 +617,7 @@ __forceinline__ __device__ void interpolate_stage(
 
 /********************************************************************************/
 
-template <typename T1, typename T2, typename FP, int LINEAR_BLOCK_SIZE, bool WORKFLOW, bool PROBE_PRED_ERROR>
+template <typename T1, typename T2, typename FP, DIM3    data_size,int LINEAR_BLOCK_SIZE, bool WORKFLOW, bool PROBE_PRED_ERROR>
 __device__ void cusz::device_api::spline3d_layout2_interpolate(
     volatile T1 s_data[9][9][33],
     volatile T2 s_ectrl[9][9][33],
@@ -641,16 +717,16 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     //set_orders(reverse[2]);
     if(reverse[2]){
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
+            T1, T2, FP,data_size, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 4, 2, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
 
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
+            T1, T2, FP,data_size, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
             false, true, false, LINEAR_BLOCK_SIZE, 9, 1, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
         interpolate_stage<
-            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
+            T1, T2, FP,data_size, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 9, 3, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
 
@@ -660,19 +736,19 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
         //if( BIX==0 and BIY==0 and BIZ==0)
        // printf("lv3s0\n");
         interpolate_stage<
-            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            T1, T2, FP,data_size, decltype(xblue), decltype(yblue), decltype(zblue),  //
             true, false, false, LINEAR_BLOCK_SIZE, 5, 2, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
        // if(BIX==0 and BIY==0 and BIZ==0)
        // printf("lv3s1\n");
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            T1, T2, FP,data_size, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
             false, true, false, LINEAR_BLOCK_SIZE, 5, 1, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
         //if(BIX==0 and BIY==0 and BIZ==0)
       //  printf("lv3s2\n");
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            T1, T2, FP,data_size, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
             false, false, true, LINEAR_BLOCK_SIZE, 4, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
     }
@@ -686,29 +762,29 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     // iteration 2, TODO switch y-z order
     if(reverse[1]){
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
+            T1, T2, FP,data_size, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 8, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
+            T1, T2, FP,data_size, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
             false, true, false, LINEAR_BLOCK_SIZE, 17, 2, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
         interpolate_stage<
-            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
+            T1, T2, FP,data_size, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 17, 5, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
     }
     else{
         interpolate_stage<
-            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            T1, T2, FP,data_size, decltype(xblue), decltype(yblue), decltype(zblue),  //
             true, false, false, LINEAR_BLOCK_SIZE, 9, 3, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            T1, T2, FP,data_size, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
             false, true, false, LINEAR_BLOCK_SIZE, 9, 2, NO_COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            T1, T2, FP,data_size, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
             false, false, true, LINEAR_BLOCK_SIZE, 8, 5, NO_COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
 
@@ -723,15 +799,15 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     if(reverse[0]){
         //may have bug 
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
+            T1, T2, FP,data_size, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
             false, false, true, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
+            T1, T2, FP,data_size, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
             false, true, false, LINEAR_BLOCK_SIZE, 33, 4, COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
-            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
+            T1, T2, FP,data_size, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
             true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_EXCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
@@ -739,16 +815,16 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     }
     else{
         interpolate_stage<
-            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            T1, T2, FP,data_size, decltype(xblue), decltype(yblue), decltype(zblue),  //
             true, false, false, LINEAR_BLOCK_SIZE, 17, 5, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
         interpolate_stage<
-            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            T1, T2, FP,data_size, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
             false, true, false, LINEAR_BLOCK_SIZE, 17, 4, COARSEN, 9, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
        
         interpolate_stage<
-            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            T1, T2, FP,data_size, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
             false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9, BORDER_EXCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
@@ -814,7 +890,7 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         // version 2, use global mem, correct
         c_gather_anchor<T>(data, data_size, data_leap, anchor, anchor_leap);
 
-        cusz::device_api::spline3d_layout2_interpolate<T, T, FP, LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
+        cusz::device_api::spline3d_layout2_interpolate<T, T, FP, data_size,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, eb_r, ebx2, radius);
         if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
             printf("esz: %d %d %d\n",ectrl_size.x,ectrl_size.y,ectrl_size.z);
@@ -854,7 +930,7 @@ __global__ void cusz::x_spline3d_infprecis_32x8x8data(
     if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
             printf("esz: %d %d %d\n",ectrl_size.x,ectrl_size.y,ectrl_size.z);
     global2shmem_33x9x9data<E, T, LINEAR_BLOCK_SIZE>(ectrl, ectrl_size, ectrl_leap, shmem.ectrl);
-    cusz::device_api::spline3d_layout2_interpolate<T, T, FP, LINEAR_BLOCK_SIZE, SPLINE3_DECOMPR, false>(
+    cusz::device_api::spline3d_layout2_interpolate<T, T, FP, data_size, LINEAR_BLOCK_SIZE, SPLINE3_DECOMPR, false>(
         shmem.data, shmem.ectrl, eb_r, ebx2, radius);
     if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
             printf("dsz: %d %d %d\n",data_size.x,data_size.y,data_size.z);
