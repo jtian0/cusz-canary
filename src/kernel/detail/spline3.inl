@@ -352,6 +352,9 @@ __forceinline__ __device__ void interpolate_stage(
         if (xyz33x9x9_predicate<BORDER_INCLUSIVE>(x, y, z)) {
             T1 pred = 0;
 
+            if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (HOLLOW)) or (CONSTEXPR (YELLOW)) )
+                printf("%d %d %d\n",x,y,z);
+
              if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==4)
                         printf("%.2e %.2e \n",s_data[z - unit][y][x],s_data[z + unit][y][x]);
                   //  }
@@ -483,8 +486,7 @@ __forceinline__ __device__ void interpolate_stage(
         auto y    = ymap(itiy, unit);
         auto z    = zmap(itiz, unit);
 
-        if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and (CONSTEXPR (HOLLOW)) or (CONSTEXPR (YELLOW)) )
-            printf("%d %d %d %d %d %d\n",itix,itiy,itiz,x,y,z);
+        
 
      //   printf("%d %d %d\n", x,y,z);
         run(x, y, z);
