@@ -403,7 +403,7 @@ __forceinline__ __device__ void interpolate_stage(
                 
             }
             if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
-                printf("%d %d %d %.2e %.2e",x,y,z,s_data[z][y][x],pred)
+                printf("%d %d %d %.2e %.2e",x,y,z,s_data[z][y][x],pred);
             }
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
