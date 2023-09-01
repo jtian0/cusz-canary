@@ -292,14 +292,14 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
 
 
         if (gx < data_size.x and gy < data_size.y and gz < data_size.z) s_data[z][y][x] = data[gid];
-
+/*
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
             printf("g2s1084 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_data[z][y][x],data[gid]);
         }
 
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==4 and z==8){
             printf("g2s1048 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_data[z][y][x],data[gid]);
-        }
+        }*/
     }
     __syncthreads();
 }
@@ -325,14 +325,14 @@ shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size
         auto gid = gx + gy * buf_leap.y + gz * buf_leap.z;
 
         if (gx < buf_size.x and gy < buf_size.y and gz < buf_size.z) dram_buf[gid] = s_buf[z][y][x];
-
+        /*
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
             printf("s2g1084 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_buf[z][y][x],dram_buf[gid]);
         }
 
         if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==4 and z==8){
             printf("s2g1048 %d %d %d %d %.2e %.2e \n",gx,gy,gz,gid,s_buf[z][y][x],dram_buf[gid]);
-        }
+        }*/
     }
     __syncthreads();
 }
@@ -632,7 +632,8 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     double alpha=1.75;
     double beta=3.0;
     bool interpolators[3]={true,true,true};
-    bool reverse[3]={true,true,true};//{false,true,true};
+    //bool reverse[3]={true,true,true};//{false,true,true};
+    bool reverse[3]={false,false,false};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
