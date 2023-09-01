@@ -698,7 +698,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
        
         interpolate_stage<
             T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-            false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9, BORDER_EXCLUSIVE, WORKFLOW>(
+            false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9, BORDER_INCLUSIVE, WORKFLOW>(
             s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
 
     }
