@@ -356,7 +356,10 @@ __forceinline__ __device__ void interpolate_stage(
             //    printf("%d %d %d\n",x,y,z);
 
              if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==4)
-                        printf("%.2e %.2e \n",s_data[z - unit][y][x],s_data[z + unit][y][x]);
+                        printf("444 %.2e %.2e \n",s_data[z - unit][y][x],s_data[z + unit][y][x]);
+
+            if(BIX == 7 and BIY == 47 and BIZ == 15 and unit==4 and x==4 and y==4 and z==0)
+                        printf("440 %.2e %.2e \n",s_data[z][y - unit][x],s_data[z][y + unit][x]);
                   //  }
             if(cubic){
                 if CONSTEXPR (BLUE) {  //
