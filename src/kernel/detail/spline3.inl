@@ -284,7 +284,13 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
         auto gz  = (z + BIZ * BLOCK8);
         auto gid = gx + gy * data_leap.y + gz * data_leap.z;
 
+
+
         if (gx < data_size.x and gy < data_size.y and gz < data_size.z) s_data[z][y][x] = data[gid];
+
+        if(BIX == 7 and BIY == 47 and BIZ == 15 and x==10 and y==8 and z==4){
+            printf("1084 %d %d \n",s_data[z][y][x],data[gid]);
+        }
     }
     __syncthreads();
 }
