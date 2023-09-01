@@ -427,7 +427,8 @@ __forceinline__ __device__ void interpolate_stage(
                 s_data[z][y][x] = pred + (code - radius) * ebx2;
                 //if(BIX == 4 and BIY == 20 and BIZ == 20 and unit==1 and CONSTEXPR (BLUE)){
                     if(fabs(s_data[z][y][x])>=0.05)
-                    printf("%d %d %d %d %d %d %.2e %.2e %.2e\n",BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
+
+                    printf("%d %d %d %d %d %d %d %d %d %.2e %.2e %.2e\n",CONSTEXPR (BLUE),CONSTEXPR (YELLOW),CONSTEXPR (HOLLOW),BIX,BIY,BIZ,x,y,z,pred,code,s_data[z][y][x]);
                // }
             }
         }
