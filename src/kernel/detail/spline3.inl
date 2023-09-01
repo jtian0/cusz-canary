@@ -126,7 +126,7 @@ __forceinline__ __device__ bool xyz33x9x9_predicate(unsigned int x, unsigned int
             return (x <= 32 and y <= 8 and z <= 8) and BIX*BLOCK32+x<data_size.x and BIY*BLOCK8+y<data_size.y and BIZ*BLOCK8+z<data_size.z;
     }
     else {
-        return x < 32 and y < 8 and z < 8 and BIX*BLOCK32+x<data_size.x and BIY*BLOCK8+y<data_size.y and BIZ*BLOCK8+z<data_size.z;
+        return x < 32+(BIX==GDX-1) and y < 8+(BIY==GDY-1) and z < 8+(BIZ==GDZ-1) and BIX*BLOCK32+x<data_size.x and BIY*BLOCK8+y<data_size.y and BIZ*BLOCK8+z<data_size.z;
     }
 }
 
