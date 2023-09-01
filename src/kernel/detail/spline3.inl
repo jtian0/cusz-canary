@@ -126,7 +126,7 @@ __forceinline__ __device__ bool xyz33x9x9_predicate(unsigned int x, unsigned int
 }
 
 // control block_id3 in function call
-template <typename T, bool PRINT_FP = false, int XEND = 33, int YEND = 9, int ZEND = 9>
+template <typename T, bool PRINT_FP = true, int XEND = 33, int YEND = 9, int ZEND = 9>
 __device__ void
 spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool compress = true, bool print_ectrl = true)
 {
@@ -702,7 +702,7 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
      test only: print a block
      ******************************************************************************/
      //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_ectrl); }
-     //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_data); }
+     if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_data); }
 }
 
 /********************************************************************************
