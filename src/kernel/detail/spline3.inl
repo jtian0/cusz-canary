@@ -344,17 +344,54 @@ __forceinline__ __device__ void interpolate_stage(
     static_assert((YELLOW and HOLLOW) == false, "must be only one hot (3)");
 
     auto run = [&](auto x, auto y, auto z) {
+
+        int temp=1;
+        FP cur_ebx2=ebx2,cur_eb_r=eb_r;
+        while(temp<unit){
+            temp*=2;
+            cur_eb_r*=1.75;
+            cur_ebx2/=1.75;
+
+        }
+        if(cur_ebx2<ebx2/3){
+            cur_ebx2=ebx2/3;
+            cur_eb_r=eb_r*3;
+
+        }
+
         if (xyz33x9x9_predicate<BORDER_INCLUSIVE>(x, y, z)) {
             T1 pred = 0;
 
             if CONSTEXPR (BLUE) {  //
-                pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                if(z>=3*unit and z+3*unit<=BLOCK8 )
+                    pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                else if (z+3*unit<=BLOCK8)
+                    pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                else if (z>=3*unit)
+                    pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+
+                else
+                    pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
             }
             if CONSTEXPR (YELLOW) {  //
-                pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                if(x>=3*unit and x+3*unit<=BLOCK32 )
+                    pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
+                else if (x+3*unit<=BLOCK32)
+                    pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
+                else if (x>=3*unit)
+                    pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
+                else
+                    pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
             }
             if CONSTEXPR (HOLLOW) {  //
-                pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                if(y>=3*unit and y+3*unit<=BLOCK8 )
+                    pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                else if (y+3*unit<=BLOCK8)
+                    pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                else if (y>=3*unit)
+                    pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                else
+                    pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
             }
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
@@ -362,16 +399,16 @@ __forceinline__ __device__ void interpolate_stage(
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
-                    code = fabs(err) * eb_r + 1;
+                    code = fabs(err) * cur_eb_r + 1;
                     code = err < 0 ? -code : code;
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
-                s_data[z][y][x]  = pred + (code - radius) * ebx2;
+                s_data[z][y][x]  = pred + (code - radius) * cur_ebx2;
             }
             else {  // TODO == DECOMPRESSS and static_assert
                 auto code       = s_ectrl[z][y][x];
-                s_data[z][y][x] = pred + (code - radius) * ebx2;
+                s_data[z][y][x] = pred + (code - radius) * cur_ebx2;
             }
         }
     };
