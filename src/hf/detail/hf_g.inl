@@ -22,6 +22,8 @@
 #include <cmath>
 #include <numeric>
 #include <stdexcept>
+
+#include "cusz/type.h"
 #define ACCESSOR(SYM, TYPE) \
   reinterpret_cast<TYPE*>(in_compressed + header.entry[Header::SYM])
 
@@ -163,6 +165,16 @@ TPL HF_CODEC* HF_CODEC::build_codebook(
 
   // [TODO] need get max bits of huffman code
 #endif
+
+  // if (prev_hist_where == CPU) {
+  //   // [TODO] PSZLOG_INFO and verbosity control
+  //   printf(
+  //       "[psz::info::hfbk] Previously, histogram is done on CPU (no D2H "
+  //       "transfer).\n");
+  // }
+  // else if (prev_hist_where == PROPER_GPU_BACKEND) {
+  //   freq->control({D2H});
+  // }
 
   psz::hf_buildbook<CPU, E, H4>(
       freq->control({D2H})->hptr(), bklen, bk4->hptr(), revbk4->hptr(),

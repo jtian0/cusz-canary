@@ -20,6 +20,7 @@
 #include "header.h"
 #include "hf/hf.hh"
 #include "kernel.hh"
+#include "log.hh"
 #include "mem.hh"
 #include "port.hh"
 #include "utils/config.hh"
@@ -81,6 +82,8 @@ Compressor<C>* Compressor<C>::compress(
     cusz_context* config, T* in, BYTE*& out, size_t& outlen, void* stream,
     bool dbg_print)
 {
+  PSZSANITIZE_PSZCTX(config);
+
   auto const eb = config->eb;
   auto const radius = config->radius;
   auto const pardeg = config->vle_pardeg;
@@ -119,21 +122,35 @@ Compressor<C>* Compressor<C>::compress(
     spline_construct(
         mem->od, mem->ac, mem->es, /* placeholder */ (void*)mem->compact, eb,
         radius, &time_pred, stream);
-    printf("interp\n");
+
+    PSZDBG_LOG("interp: done")
+    PSZDBG_PTR_WHERE(mem->ectrl_spl());
+    PSZDBG_VAR("pipeline", elen)
+
+    PSZSANITIZE_QUANTCODE(mem->es->control({D2H})->hptr(), elen, booklen);
+
+    dump({PszQuant}, config->infile);
+
     psz::histogram<PROPER_GPU_BACKEND, E>(
         mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
-    printf("histo\n");
+    PSZDBG_LOG("histogram gpu: done")
+    // PSZSANITIZE_HIST_OUTPUT(mem->ht->control({D2H})->hptr(), booklen);
+
     // psz::histsp<PROPER_GPU_BACKEND, E>(
     //      mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
-    // printf("histsp\n");
+    // PSZDBG_LOG("histsp gpu: done")
 
     codec->build_codebook(mem->ht, booklen, stream);
-    printf("codebook\n");
+
+    PSZSANITIZE_HIST_BK(mem->ht->hptr(), codec->bk4->hptr(), booklen);
+
+    // codec->build_codebook(mem->ht, booklen, stream, CPU);
+    PSZDBG_LOG("codebook: done")
 
     if (config->report_cr_est) codec->calculate_CR(mem->es);
 
     codec->encode(mem->ectrl_spl(), elen, &d_codec_out, &codec_outlen, stream);
-    printf("encode\n");
+    PSZDBG_LOG("encoding done")
 
 #else
     throw runtime_error(
@@ -183,14 +200,18 @@ Compressor<C>* Compressor<C>::compress(
   /******************************************************************************/
 
   update_header();
-  printf("update\n");
+
+  PSZDBG_LOG("update header: done");
+
   merge_subfiles(
       config->pred_type,                                                     //
       mem->anchor(), mem->ac->len(),                                         //
       d_codec_out, codec_outlen,                                             //
       mem->compact_val(), mem->compact_idx(), mem->compact->num_outliers(),  //
       stream);
-  printf("merge\n");
+
+  PSZDBG_LOG("merge buf: done");
+
   // output
   outlen = psz_utils::filesize(&header);
   mem->_compressed->m->len = outlen;
@@ -198,7 +219,8 @@ Compressor<C>* Compressor<C>::compress(
   out = mem->_compressed->dptr();
 
   collect_comp_time();
-  printf("end\n");
+
+  PSZDBG_LOG("compression: done");
 
   // TODO fallback handling
   // use_fallback_codec = false;
@@ -291,15 +313,15 @@ Compressor<C>* Compressor<C>::dump(
 
     // TODO check if compressed len updated
     if (i == PszArchive)
-      mem->_compressed->control({H2D})->file(ofn(".psz_archive"), ToFile);
+      mem->_compressed->control({D2H})->file(ofn(".psz_archive"), ToFile);
     else if (i == PszQuant)
-      mem->el->control({H2D})->file(ofn(".psz_quant"), ToFile);
+      mem->el->control({D2H})->file(ofn(".psz_quant"), ToFile);
     else if (i == PszHist)
-      mem->ht->control({H2D})->file(ofn(".psz_hist"), ToFile);
+      mem->ht->control({D2H})->file(ofn(".psz_hist"), ToFile);
     else if (i == PszSpVal)
-      mem->sv->control({H2D})->file(ofn(".psz_spval"), ToFile);
+      mem->sv->control({D2H})->file(ofn(".psz_spval"), ToFile);
     else if (i == PszSpIdx)
-      mem->si->control({H2D})->file(ofn(".psz_spidx"), ToFile);
+      mem->si->control({D2H})->file(ofn(".psz_spidx"), ToFile);
     else if (i > PszHf______ and i < END)
       codec->dump({i}, basename);
     else
