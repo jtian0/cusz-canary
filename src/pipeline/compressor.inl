@@ -119,17 +119,21 @@ Compressor<C>* Compressor<C>::compress(
     spline_construct(
         mem->od, mem->ac, mem->es, /* placeholder */ (void*)mem->compact, eb,
         radius, &time_pred, stream);
-
-    // psz::histogram<PROPER_GPU_BACKEND, E>(
-    //     mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
-    psz::histsp<PROPER_GPU_BACKEND, E>(
+    printf("interp\n");
+    psz::histogram<PROPER_GPU_BACKEND, E>(
         mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
+    printf("histo\n");
+    // psz::histsp<PROPER_GPU_BACKEND, E>(
+    //      mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
+    // printf("histsp\n");
 
     codec->build_codebook(mem->ht, booklen, stream);
+    printf("codebook\n");
 
     if (config->report_cr_est) codec->calculate_CR(mem->es);
 
     codec->encode(mem->ectrl_spl(), elen, &d_codec_out, &codec_outlen, stream);
+    printf("encode\n");
 
 #else
     throw runtime_error(
@@ -179,14 +183,14 @@ Compressor<C>* Compressor<C>::compress(
   /******************************************************************************/
 
   update_header();
-
+  printf("update\n");
   merge_subfiles(
       config->pred_type,                                                     //
       mem->anchor(), mem->ac->len(),                                         //
       d_codec_out, codec_outlen,                                             //
       mem->compact_val(), mem->compact_idx(), mem->compact->num_outliers(),  //
       stream);
-
+  printf("merge\n");
   // output
   outlen = psz_utils::filesize(&header);
   mem->_compressed->m->len = outlen;
@@ -194,6 +198,7 @@ Compressor<C>* Compressor<C>::compress(
   out = mem->_compressed->dptr();
 
   collect_comp_time();
+  printf("end\n");
 
   // TODO fallback handling
   // use_fallback_codec = false;
