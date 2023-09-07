@@ -35,7 +35,7 @@
 #define BIZ blockIdx.z
 #define BDX blockDim.x
 #define BDY blockDim.y
-#define BDZ blockDim.
+#define BDZ blockDim.z
 
 using DIM     = unsigned int;
 using STRIDE  = unsigned int;
@@ -44,6 +44,7 @@ using STRIDE3 = dim3;
 
 constexpr int BLOCK8  = 8;
 constexpr int BLOCK32 = 32;
+constexpr int MAX_LINEAR_BLOCK_SIZE = 256;
 
 #define SHM_ERROR s_ectrl
 
@@ -57,7 +58,8 @@ template <
     typename TITER,
     typename EITER,
     typename FP            = float,
-    int  LINEAR_BLOCK_SIZE = 256>
+    int  LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE,
+    bool PROBE_PRED_ERROR  = false>
 __global__ void c_spline3d_infprecis_32x8x8data(
     TITER   data,
     DIM3    data_size,
@@ -75,7 +77,7 @@ template <
     typename EITER,
     typename TITER,
     typename FP           = float,
-    int LINEAR_BLOCK_SIZE = 256>
+    int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
 __global__ void x_spline3d_infprecis_32x8x8data(
     EITER   ectrl,        // input 1
     DIM3    ectrl_size,   //
@@ -102,7 +104,8 @@ template <
     bool WORKFLOW         = SPLINE3_COMPR,
     bool PROBE_PRED_ERROR = false>
 __device__ void
-spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius);
+spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius
+    );
 }  // namespace device_api
 
 }  // namespace cusz
@@ -144,7 +147,7 @@ spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool com
                     if (compress) {
                         if (c == 0) { printf("%3c", '.'); }
                         else {
-                            if (abs(c) >= 10) { printf("%3c", '*'); }
+                            if (fabs(c) >= 10) { printf("%3c", '*'); }
                             else {
                                 if (print_ectrl) { printf("%3d", c); }
                                 else {
@@ -167,7 +170,7 @@ spline3d_print_block_from_GPU(T volatile a[9][9][33], int radius = 512, bool com
     printf("\nGPU print end\n\n");
 }
 
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
 __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], int radius)
 {
     // alternatively, reinterprete cast volatile T?[][][] to 1D
@@ -189,7 +192,7 @@ __device__ void c_reset_scratch_33x9x9data(volatile T1 s_data[9][9][33], volatil
     __syncthreads();
 }
 
-template <typename T1, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
 __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1* anchor, STRIDE3 anchor_leap)
 {
     auto x = (TIX % 32) + BIX * 32;
@@ -209,7 +212,7 @@ __device__ void c_gather_anchor(T1* data, DIM3 data_size, STRIDE3 data_leap, T1*
 
 /*
  * use shmem, erroneous
-template <typename T1, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
 __device__ void c_gather_anchor(volatile T1 s_data[9][9][33], T1* anchor, STRIDE3 anchor_leap)
 {
     constexpr auto NUM_ITERS = 33 * 9 * 9 / LINEAR_BLOCK_SIZE + 1;  // 11 iterations
@@ -233,7 +236,7 @@ __device__ void c_gather_anchor(volatile T1 s_data[9][9][33], T1* anchor, STRIDE
 }
 */
 
-template <typename T1, typename T2 = T1, int LINEAR_BLOCK_SIZE = 256>
+template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
 __device__ void x_reset_scratch_33x9x9data(
     volatile T1 s_xdata[9][9][33],
     volatile T2 s_ectrl[9][9][33],
@@ -269,8 +272,8 @@ __device__ void x_reset_scratch_33x9x9data(
     __syncthreads();
 }
 
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256>
-__device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_leap, volatile T2 s_data[9][9][33])
+template <typename Input, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
+__device__ void global2shmem_33x9x9data(Input* data, DIM3 data_size, STRIDE3 data_leap, volatile Input s_data[9][9][33])
 {
     constexpr auto TOTAL = 33 * 9 * 9;
 
@@ -288,8 +291,7 @@ __device__ void global2shmem_33x9x9data(T1* data, DIM3 data_size, STRIDE3 data_l
     __syncthreads();
 }
 
-// dram_outlier should be the same in type with shared memory buf
-template <typename T1, typename T2, int LINEAR_BLOCK_SIZE = 256, bool WITH_COMPACT = false>
+template <typename Output, int LINEAR_BLOCK_SIZE = MAX_LINEAR_BLOCK_SIZE>
 __device__ void
 shmem2global_32x8x8data(volatile T1 s_buf[9][9][33], T2* dram_buf, DIM3 buf_size, STRIDE3 buf_leap, T1* dram_outlier = nullptr, uint32_t* dram_idx = nullptr)
 {
@@ -335,9 +337,10 @@ __forceinline__ __device__ void interpolate_stage(
     int         unit,
     FP          eb_r,
     FP          ebx2,
-    int         radius)
+    int         radius,
+    bool cubic)
 {
-    static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= LINEAR_BLOCK_SIZE, "block oversized");
+    static_assert(BLOCK_DIMX * BLOCK_DIMY * (COARSEN ? 1 : BLOCK_DIMZ) <= 384, "block oversized");
     static_assert((BLUE or YELLOW or HOLLOW) == true, "must be one hot");
     static_assert((BLUE and YELLOW) == false, "must be only one hot (1)");
     static_assert((BLUE and YELLOW) == false, "must be only one hot (2)");
@@ -345,53 +348,60 @@ __forceinline__ __device__ void interpolate_stage(
 
     auto run = [&](auto x, auto y, auto z) {
 
-        int temp=1;
-        FP cur_ebx2=ebx2,cur_eb_r=eb_r;
-        while(temp<unit){
-            temp*=2;
-            cur_eb_r*=1.75;
-            cur_ebx2/=1.75;
-
-        }
-        if(cur_ebx2<ebx2/3){
-            cur_ebx2=ebx2/3;
-            cur_eb_r=eb_r*3;
-
-        }
+        
 
         if (xyz33x9x9_predicate<BORDER_INCLUSIVE>(x, y, z)) {
             T1 pred = 0;
+            if(cubic){
+                if CONSTEXPR (BLUE) {  //
+                    if(z>=3*unit and z+3*unit<=BLOCK8 )
+                        pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                    else if (z+3*unit<=BLOCK8)
+                        pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
+                    else if (z>=3*unit)
+                        pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
 
-            if CONSTEXPR (BLUE) {  //
-                if(z>=3*unit and z+3*unit<=BLOCK8 )
-                    pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
-                else if (z+3*unit<=BLOCK8)
-                    pred = (3*s_data[z - unit][y][x] + 6*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 8;
-                else if (z>=3*unit)
-                    pred = (-s_data[z - 3*unit][y][x]+6*s_data[z - unit][y][x] + 3*s_data[z + unit][y][x]) / 8;
+                    else
+                        pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                }
+                if CONSTEXPR (YELLOW) {  //
+                    if(y>=3*unit and y+3*unit<=BLOCK8 )
+                        pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                    else if (y+3*unit<=BLOCK8)
+                        pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
+                    else if (y>=3*unit)
+                        pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
+                    else
+                        pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                }
 
-                else
-                    pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                if CONSTEXPR (HOLLOW) {  //
+                    if(x>=3*unit and x+3*unit<=BLOCK32 )
+                        pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
+                    else if (x+3*unit<=BLOCK32)
+                        pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
+                    else if (x>=3*unit)
+                        pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
+                    else
+                        pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                }
+                
             }
-            if CONSTEXPR (YELLOW) {  //
-                if(x>=3*unit and x+3*unit<=BLOCK32 )
-                    pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z ][y][x + 3*unit]) / 16;
-                else if (x+3*unit<=BLOCK32)
-                    pred = (3*s_data[z ][y][x- unit] + 6*s_data[z ][y][x + unit]-s_data[z][y][x + 3*unit]) / 8;
-                else if (x>=3*unit)
-                    pred = (-s_data[z][y][x - 3*unit]+6*s_data[z][y][x - unit] + 3*s_data[z ][y][x + unit]) / 8;
-                else
-                    pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
-            }
-            if CONSTEXPR (HOLLOW) {  //
-                if(y>=3*unit and y+3*unit<=BLOCK8 )
-                    pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
-                else if (y+3*unit<=BLOCK8)
-                    pred = (3*s_data[z ][y - unit][x] + 6*s_data[z][y + unit][x]-s_data[z][y + 3*unit][x]) / 8;
-                else if (y>=3*unit)
-                    pred = (-s_data[z ][y- 3*unit][x]+6*s_data[z][y - unit][x] + 3*s_data[z][y + unit][x]) / 8;
-                else
-                    pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+            else{
+                if CONSTEXPR (BLUE) {  //
+                    
+                        pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                }
+                if CONSTEXPR (YELLOW) {  //
+                    
+                        pred = (s_data[z][y - unit][x] + s_data[z][y + unit][x]) / 2;
+                }
+
+                if CONSTEXPR (HOLLOW) {  //
+                    
+                        pred = (s_data[z][y][x - unit] + s_data[z][y][x + unit]) / 2;
+                }
+                
             }
 
             if CONSTEXPR (WORKFLOW == SPLINE3_COMPR) {
@@ -399,16 +409,16 @@ __forceinline__ __device__ void interpolate_stage(
                 decltype(err) code;
                 // TODO unsafe, did not deal with the out-of-cap case
                 {
-                    code = fabs(err) * cur_eb_r + 1;
+                    code = fabs(err) * eb_r + 1;
                     code = err < 0 ? -code : code;
                     code = int(code / 2) + radius;
                 }
                 s_ectrl[z][y][x] = code;  // TODO double check if unsigned type works
-                s_data[z][y][x]  = pred + (code - radius) * cur_ebx2;
+                s_data[z][y][x]  = pred + (code - radius) * ebx2;
             }
             else {  // TODO == DECOMPRESSS and static_assert
                 auto code       = s_ectrl[z][y][x];
-                s_data[z][y][x] = pred + (code - radius) * cur_ebx2;
+                s_data[z][y][x] = pred + (code - radius) * ebx2;
             }
         }
     };
@@ -416,15 +426,31 @@ __forceinline__ __device__ void interpolate_stage(
 
     if CONSTEXPR (COARSEN) {
         constexpr auto TOTAL = BLOCK_DIMX * BLOCK_DIMY * BLOCK_DIMZ;
-        for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
-            auto itix = (_tix % BLOCK_DIMX);
-            auto itiy = (_tix / BLOCK_DIMX) % BLOCK_DIMY;
-            auto itiz = (_tix / BLOCK_DIMX) / BLOCK_DIMY;
-            auto x    = xmap(itix, unit);
-            auto y    = ymap(itiy, unit);
-            auto z    = zmap(itiz, unit);
-            run(x, y, z);
+        if( BLOCK_DIMX *BLOCK_DIMY<= LINEAR_BLOCK_SIZE){
+            for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
+                auto itix = (_tix % BLOCK_DIMX);
+                auto itiy = (_tix / BLOCK_DIMX) % BLOCK_DIMY;
+                auto itiz = (_tix / BLOCK_DIMX) / BLOCK_DIMY;
+                auto x    = xmap(itix, unit);
+                auto y    = ymap(itiy, unit);
+                auto z    = zmap(itiz, unit);
+                run(x, y, z);
+            }
         }
+        //may have bug    
+        else{
+            for (auto _tix = TIX; _tix < TOTAL; _tix += LINEAR_BLOCK_SIZE) {
+                auto itix = (_tix % BLOCK_DIMX);
+                auto itiz = (_tix / BLOCK_DIMX) % BLOCK_DIMZ;
+                auto itiy = (_tix / BLOCK_DIMX) / BLOCK_DIMZ;
+                auto x    = xmap(itix, unit);
+                auto y    = ymap(itiy, unit);
+                auto z    = zmap(itiz, unit);
+                run(x, y, z);
+            }
+        }
+        //may have bug  end
+        
     }
     else {
         auto itix = (TIX % BLOCK_DIMX);
@@ -433,6 +459,8 @@ __forceinline__ __device__ void interpolate_stage(
         auto x    = xmap(itix, unit);
         auto y    = ymap(itiy, unit);
         auto z    = zmap(itiz, unit);
+
+     //   printf("%d %d %d\n", x,y,z);
         run(x, y, z);
     }
     __syncthreads();
@@ -448,69 +476,218 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     volatile T2 s_ectrl[9][9][33],
     FP          eb_r,
     FP          ebx2,
-    int         radius)
+    int         radius
+    
+    )
 {
+    double alpha=1.75;
+    double beta=3.0;
+    bool interpolators[3]={true,true,true};
+    bool reverse[3]={false,true,true};//{false,true,true};
     auto xblue = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
     auto yblue = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
     auto zblue = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
 
-    auto xyellow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 + 1); };
-    auto yyellow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
+    auto xblue_reverse = [] __device__(int _tix, int unit) -> int { return unit * (_tix ); };
+    auto yblue_reverse = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy ); };
+    auto zblue_reverse = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2 + 1); };
+
+    auto xyellow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2); };
+    auto yyellow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2+1); };
     auto zyellow = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz); };
 
-    auto xhollow = [] __device__(int _tix, int unit) -> int { return unit * (_tix); };
-    auto yhollow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2 + 1); };
+    auto xyellow_reverse = [] __device__(int _tix, int unit) -> int { return unit * (_tix ); };
+    auto yyellow_reverse = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2+1); };
+    auto zyellow_reverse = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz * 2); };
+
+
+    auto xhollow = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 +1); };
+    auto yhollow = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy); };
     auto zhollow = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz); };
+
+    auto xhollow_reverse = [] __device__(int _tix, int unit) -> int { return unit * (_tix * 2 +1); };
+    auto yhollow_reverse = [] __device__(int _tiy, int unit) -> int { return unit * (_tiy * 2); };
+    auto zhollow_reverse = [] __device__(int _tiz, int unit) -> int { return unit * (_tiz *2); };
 
     constexpr auto COARSEN          = true;
     constexpr auto NO_COARSEN       = false;
     constexpr auto BORDER_INCLUSIVE = true;
     constexpr auto BORDER_EXCLUSIVE = false;
 
-    int unit = 4;
+    
+    FP cur_ebx2=ebx2,cur_eb_r=eb_r;
+
+
+    auto calc_eb = [&](auto unit) {
+        cur_ebx2=ebx2,cur_eb_r=eb_r;
+        int temp=1;
+        while(temp<unit){
+            temp*=2;
+            cur_eb_r*=alpha;
+            cur_ebx2/=alpha;
+
+        }
+        if(cur_ebx2<ebx2/beta){
+            cur_ebx2=ebx2/beta;
+            cur_eb_r=eb_r*beta;
+
+        }
+    };
+
+
+
+    
+
+
+
+    
 
     // iteration 1
-    interpolate_stage<
-        T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
-        true, false, false, LINEAR_BLOCK_SIZE, 5, 2, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xblue, yblue, zblue, unit, eb_r, ebx2, radius);
-    interpolate_stage<
-        T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 4, 2, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xyellow, yyellow, zyellow, unit, eb_r, ebx2, radius);
-    interpolate_stage<
-        T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 9, 1, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xhollow, yhollow, zhollow, unit, eb_r, ebx2, radius);
+    /*
+    auto colors_0={false,false,false};
+    auto colors_1={false,false,false};
+    auto colors_2={false,false,false};
+    //auto interp_orders={0,1,2};
+
+    auto set_orders [&](auto reverse){
+        colors_0={false,false,false};
+        colors_1={false,false,false};
+        colors_2={false,false,false};
+        auto interp_orders={0,1,2};
+        if (reverse)
+            interp_orders={2,1,0};
+        colors_0[interp_orders[0]]=true;
+        colors_1[interp_orders[1]]=true;
+        colors_2[interp_orders[2]]=true;
+
+    }
+    */
+    
+
+
+    int unit = 4;
+    calc_eb(unit);
+    //set_orders(reverse[2]);
+    if(reverse[2]){
+        interpolate_stage<
+            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
+            false, false, true, LINEAR_BLOCK_SIZE, 4, 2, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+
+        interpolate_stage<
+            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
+            false, true, false, LINEAR_BLOCK_SIZE, 9, 1, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
+            true, false, false, LINEAR_BLOCK_SIZE, 9, 3, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+
+
+    }
+    else{
+        //if( BIX==0 and BIY==0 and BIZ==0)
+       // printf("lv3s0\n");
+        interpolate_stage<
+            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            true, false, false, LINEAR_BLOCK_SIZE, 5, 2, NO_COARSEN, 1, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+       // if(BIX==0 and BIY==0 and BIZ==0)
+       // printf("lv3s1\n");
+        interpolate_stage<
+            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            false, true, false, LINEAR_BLOCK_SIZE, 5, 1, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+        //if(BIX==0 and BIY==0 and BIZ==0)
+      //  printf("lv3s2\n");
+        interpolate_stage<
+            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            false, false, true, LINEAR_BLOCK_SIZE, 4, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[2]);
+    }
+   // if(BIX==0 and BIY==0 and BIZ==0)
+   // printf("lv3\n");
 
     unit = 2;
+    calc_eb(unit);
+    //set_orders(reverse[1]);
 
     // iteration 2, TODO switch y-z order
-    interpolate_stage<
-        T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
-        true, false, false, LINEAR_BLOCK_SIZE, 9, 3, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xblue, yblue, zblue, unit, eb_r, ebx2, radius);
-    interpolate_stage<
-        T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 8, 3, NO_COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xyellow, yyellow, zyellow, unit, eb_r, ebx2, radius);
-    interpolate_stage<
-        T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 17, 2, NO_COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xhollow, yhollow, zhollow, unit, eb_r, ebx2, radius);
+    if(reverse[1]){
+        interpolate_stage<
+            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
+            false, false, true, LINEAR_BLOCK_SIZE, 8, 3, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
+            false, true, false, LINEAR_BLOCK_SIZE, 17, 2, NO_COARSEN, 3, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
+            true, false, false, LINEAR_BLOCK_SIZE, 17, 5, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
+    }
+    else{
+        interpolate_stage<
+            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            true, false, false, LINEAR_BLOCK_SIZE, 9, 3, NO_COARSEN, 2, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            false, true, false, LINEAR_BLOCK_SIZE, 9, 2, NO_COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            false, false, true, LINEAR_BLOCK_SIZE, 8, 5, NO_COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[1]);
 
+    }
+    //if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
+    //printf("lv2\n");
     unit = 1;
+    calc_eb(unit);
+   // set_orders(reverse[0]);
 
     // iteration 3
-    interpolate_stage<
-        T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
-        true, false, false, LINEAR_BLOCK_SIZE, 17, 5, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xblue, yblue, zblue, unit, eb_r, ebx2, radius);
-    interpolate_stage<
-        T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
-        false, true, false, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 9, BORDER_INCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xyellow, yyellow, zyellow, unit, eb_r, ebx2, radius);
-    /******************************************************************************
+    if(reverse[0]){
+        //may have bug 
+        interpolate_stage<
+            T1, T2, FP, decltype(xhollow_reverse), decltype(yhollow_reverse), decltype(zhollow_reverse),  //
+            false, false, true, LINEAR_BLOCK_SIZE, 16, 5, COARSEN, 5, BORDER_EXCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xhollow_reverse, yhollow_reverse, zhollow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xyellow_reverse), decltype(yyellow_reverse), decltype(zyellow_reverse),  //
+            false, true, false, LINEAR_BLOCK_SIZE, 33, 4, COARSEN, 5, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xyellow_reverse, yyellow_reverse, zyellow_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xblue_reverse), decltype(yblue_reverse), decltype(zblue_reverse),  //
+            true, false, false, LINEAR_BLOCK_SIZE, 33, 9, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xblue_reverse, yblue_reverse, zblue_reverse, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+
+        //may have bug end
+    }
+    else{
+        interpolate_stage<
+            T1, T2, FP, decltype(xblue), decltype(yblue), decltype(zblue),  //
+            true, false, false, LINEAR_BLOCK_SIZE, 17, 5, COARSEN, 4, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xblue, yblue, zblue, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+        interpolate_stage<
+            T1, T2, FP, decltype(xyellow), decltype(yyellow), decltype(zyellow),  //
+            false, true, false, LINEAR_BLOCK_SIZE, 17, 4, COARSEN, 9, BORDER_INCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xyellow, yyellow, zyellow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+       
+        interpolate_stage<
+            T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
+            false, false, true, LINEAR_BLOCK_SIZE, 16, 9, COARSEN, 9, BORDER_EXCLUSIVE, WORKFLOW>(
+            s_data, s_ectrl, xhollow, yhollow, zhollow, unit, cur_eb_r, cur_ebx2, radius,interpolators[0]);
+
+    }
+  //  if(TIX==0 and TIY==0 and TIZ==0 and BIX==0 and BIY==0 and BIZ==0)
+   // printf("lv1\n");
+    
+
+
+     /******************************************************************************
      test only: last step inclusive
      ******************************************************************************/
     // interpolate_stage<
@@ -520,16 +697,12 @@ __device__ void cusz::device_api::spline3d_layout2_interpolate(
     /******************************************************************************
      production
      ******************************************************************************/
-    interpolate_stage<
-        T1, T2, FP, decltype(xhollow), decltype(yhollow), decltype(zhollow),  //
-        false, false, true, LINEAR_BLOCK_SIZE, 32, 4, COARSEN, 8, BORDER_EXCLUSIVE, WORKFLOW>(
-        s_data, s_ectrl, xhollow, yhollow, zhollow, unit, eb_r, ebx2, radius);
 
     /******************************************************************************
      test only: print a block
      ******************************************************************************/
-    // if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_ectrl); }
-    // if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_data); }
+     //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_ectrl); }
+     //if (TIX == 0 and BIX == 0 and BIY == 0 and BIZ == 0) { spline3d_print_block_from_GPU(s_data); }
 }
 
 /********************************************************************************
