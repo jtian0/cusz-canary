@@ -127,9 +127,14 @@ Compressor<C>* Compressor<C>::compress(
     PSZDBG_PTR_WHERE(mem->ectrl_spl());
     PSZDBG_VAR("pipeline", elen)
 
-    PSZSANITIZE_QUANTCODE(mem->es->control({D2H})->hptr(), elen, booklen);
-
     dump({PszQuant}, config->infile);
+
+    // mem->es->control({D2H});
+    // std::for_each(mem->es->hbegin(), mem->es->hbegin() + 99, [](auto i) {
+    //   cout << i << endl;
+    // });
+
+    PSZSANITIZE_QUANTCODE(mem->es->control({D2H})->hptr(), elen, booklen);
 
     psz::histogram<PROPER_GPU_BACKEND, E>(
         mem->ectrl_spl(), elen, mem->hist(), booklen, &time_hist, stream);
