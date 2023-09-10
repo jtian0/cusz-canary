@@ -139,6 +139,18 @@ void pszctx_parse_control_string(
       else if (v == "lorenzo") {
         ctx->pred_type = pszpredictor_type::Lorenzo;
       }
+      else if (v == "l21") {
+        ctx->pred_type = pszpredictor_type::L21;
+        cout << "[psz::experiment] selected Lorenzo: L21 version." << endl;
+      }
+      else if (v == "l23c") {
+        ctx->pred_type = pszpredictor_type::L23c;
+        cout << "[psz::experiment] selected Lorenzo: L23c version." << endl;
+      }
+      else if (v == "l23ch") {
+        ctx->pred_type = pszpredictor_type::L23ch;
+        cout << "[psz::experiment] selected Lorenzo: L23ch version." << endl;
+      }
       else {
         printf(
             "[psz::warning::parser] "
@@ -236,6 +248,18 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         }
         else if (v == "lorenzo") {
           ctx->pred_type = pszpredictor_type::Lorenzo;
+        }
+        else if (v == "l21") {
+          ctx->pred_type = pszpredictor_type::L21;
+          cout << "[psz::experiment] selected Lorenzo: L21 version." << endl;
+        }
+        else if (v == "l23c") {
+          ctx->pred_type = pszpredictor_type::L23c;
+          cout << "[psz::experiment] selected Lorenzo: L23c version." << endl;
+        }
+        else if (v == "l23ch") {
+          ctx->pred_type = pszpredictor_type::L23ch;
+          cout << "[psz::experiment] selected Lorenzo: L23ch version." << endl;
         }
         else {
           printf(

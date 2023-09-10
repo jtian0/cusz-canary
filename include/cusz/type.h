@@ -19,7 +19,15 @@ extern "C" {
 #include <stddef.h>
 #include <stdint.h>
 
-enum cusz_execution_policy { CPU, CUDA, HIP, ONEAPI, THRUST, HIP_NV, ONEAPI_NV };
+enum cusz_execution_policy {
+  CPU,
+  CUDA,
+  HIP,
+  ONEAPI,
+  THRUST,
+  HIP_NV,
+  ONEAPI_NV
+};
 typedef enum cusz_execution_policy cusz_execution_policy;
 typedef enum cusz_execution_policy pszexepolicy;
 typedef enum cusz_execution_policy pszpolicy;
@@ -96,7 +104,10 @@ typedef cusz_mode pszmode;
 
 typedef enum cusz_predictortype  //
 { Lorenzo = 0,
-  Spline = 1 } cusz_predictortype;
+  Spline = 1,
+  L21 = 2,
+  L23c = 3,
+  L23ch = 4 } cusz_predictortype;
 typedef cusz_predictortype pszpredictor_type;
 
 typedef enum cusz_preprocessingtype  //

@@ -20,6 +20,7 @@
 #include "header.h"
 #include "hf/hf.hh"
 #include "kernel.hh"
+#include "log/dbg_noarch.hh"
 #include "log/sanitize.hh"
 #include "mem.hh"
 #include "port.hh"
@@ -108,6 +109,15 @@ Compressor<C>* Compressor<C>::compress(
     // header.byte_vle = use_fallback_codec ? 8 : 4;
   };
 
+  auto ndim = [](dim3 len3) {
+    if (len3.z == 1 and len3.y == 1)
+      return 1;
+    else if (len3.z == 1 and len3.y != 1)
+      return 2;
+    else
+      return 3;
+  };
+
   /******************************************************************************/
 
   auto elen = config->pred_type == pszpredictor_type::Spline  //
@@ -138,65 +148,64 @@ Compressor<C>* Compressor<C>::compress(
         "temporarily.");
 #endif
   }
-  else {
-    // PSZDBG_VAR("comp-lrc", radius);
-
-    auto ndim = [](dim3 len3) {
-      if (len3.z == 1 and len3.y == 1)
-        return 1;
-      else if (len3.z == 1 and len3.y != 1)
-        return 2;
-      else
-        return 3;
-    };
-
-    // `psz_comp_l23r` with compaction in place of `psz_comp_l23` (no `r`)
+  else if (config->pred_type == pszpredictor_type::L23c) {
     psz_comp_l23r<T, E>(
         in, len3, eb, radius, mem->ectrl_lrz(), (void*)mem->compact,
         &time_pred, stream, mem->hist_psh());
 
-    // `psz::histogram` is on for evaluating purpose,
-    // as it is not always outperformed by `psz::histsp`.
-    // psz::histogram<PROPER_GPU_BACKEND, E>(
-    //     mem->ectrl_lrz(), elen, mem->hist(), booklen, &time_hist, stream);
+    // `psz::histogram` is on for evaluating purpose, as it is not always
+    // outperformed by `psz::histsp`.
+    // [caveat] histogram contains the doubled frequencies, but this does not
+    // affect building Huffman tree.
+    psz::histogram<PROPER_GPU_BACKEND, E>(
+        mem->ectrl_lrz(), elen, mem->hist(), booklen, &time_hist, stream);
 
-// #if defined(PSZ_USE_CUDA)
-//     psz::histsp<PROPER_GPU_BACKEND, E>(
-//         mem->ectrl_lrz(), elen, mem->hist(), booklen, &time_hist, stream);
-// #elif defined(PSZ_USE_HIP)
-//     cout << "[psz::warning::compressor] fast histsp hangs when HIP backend is "
-//             "used; fallback to the normal version"
-//          << endl;
-// #endif
+#if defined(PSZ_USE_CUDA)
+    psz::histsp<PROPER_GPU_BACKEND, E>(
+        mem->ectrl_lrz(), elen, mem->hist(), booklen, &time_hist, stream);
+#elif defined(PSZ_USE_HIP)
+    cout << "[psz::warning::compressor] fast histsp hangs when HIP backend is "
+            "used; fallback to the normal version."
+         << endl;
+#endif
 
-    // PSZSANITIZE_HIST_OUTPUT(mem->ht_psh->control({D2H})->hptr(), (radius *
-    // 2)); 
-    
-    // PSZSANITIZE_HIST_OUTPUT(mem->ht->control({D2H})->hptr(), (radius *
-    // 2));
+    // PSZSANITIZE_HIST_OUTPUT(mem->ht->control({D2H})->hptr(), booklen);
 
     // Huffman encoding
-
-    // if (ndim(len3) == 3) {
-    //   // 23-09-09 baseline
-    //   codec->build_codebook(mem->ht, booklen, stream);
-    // }
-    // else {
-      // 23-09-09 test psh (1D)
-      codec->build_codebook(mem->ht_psh, booklen, stream);
-    // }
-
+    codec->build_codebook(mem->ht, booklen, stream);
     if (config->report_cr_est) codec->calculate_CR(mem->el);
 
+    // count outliers (by far, already gathered in psz_comp_l23r)
+    mem->compact->make_host_accessible((GpuStreamT)stream);
+    splen = mem->compact->num_outliers();
+#if defined(PSZ_USE_HIP)
+    cout << "[psz:dbg::res] splen: " << splen << endl;
+#endif
+  }
+  else if (
+      config->pred_type == pszpredictor_type::Lorenzo or
+      config->pred_type == pszpredictor_type::L23ch) {  // default
+
+    psz_comp_l23r<T, E>(
+        in, len3, eb, radius, mem->ectrl_lrz(), (void*)mem->compact,
+        &time_pred, stream, mem->hist_psh());
+
+    // PSZSANITIZE_HIST_OUTPUT(mem->ht_psh->control({D2H})->hptr(), booklen);
+
+    // Huffman encoding
+    codec->build_codebook(mem->ht_psh, booklen, stream);
+    if (config->report_cr_est) codec->calculate_CR(mem->el);
     codec->encode(mem->ectrl_lrz(), elen, &d_codec_out, &codec_outlen, stream);
 
     // count outliers (by far, already gathered in psz_comp_l23r)
     mem->compact->make_host_accessible((GpuStreamT)stream);
     splen = mem->compact->num_outliers();
-
 #if defined(PSZ_USE_HIP)
     cout << "[psz:dbg::res] splen: " << splen << endl;
 #endif
+  }
+  else {
+    __PSZDBG__FATAL("Non-existing predictor type.");
   }
 
   // /* debug */ CHECK_GPU(GpuStreamSync(stream));
