@@ -148,6 +148,23 @@ Compressor<C>* Compressor<C>::compress(
         "temporarily.");
 #endif
   }
+  else if (config->pred_type == pszpredictor_type::L21) {
+    // L21 but refactored in '23
+    psz_comp_l23<T, E>(
+        in, len3, eb, radius, mem->ectrl_lrz(), mem->outlier_space(),
+        &time_pred, stream);
+
+    psz::histogram<PROPER_GPU_BACKEND, E>(
+        mem->ectrl_lrz(), elen, mem->hist(), booklen, &time_hist, stream);
+
+    // [TODO] too much
+    int nnz;
+    psz::spv_gather<CUDA, T>(
+        mem->outlier_space(), elen, mem->compact_val(), mem->compact_idx(),
+        &nnz, &time_sp, stream);
+
+    mem->compact->h_num = nnz;
+  }
   else if (config->pred_type == pszpredictor_type::L23c) {
     psz_comp_l23r<T, E>(
         in, len3, eb, radius, mem->ectrl_lrz(), (void*)mem->compact,
