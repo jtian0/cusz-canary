@@ -14,7 +14,9 @@
 #include "cusz/type.h"
 #include "detail/spline3.inl"
 #include "kernel/spline.hh"
-#include "mem/compact_cu.hh"
+#include "mem/compact.hh"
+
+constexpr int DEFAULT_BLOCK_SIZE = 384;
 
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
