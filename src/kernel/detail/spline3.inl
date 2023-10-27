@@ -108,6 +108,10 @@ namespace device_api {
 /********************************************************************************
  * device API
  ********************************************************************************/
+
+    template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
+__device__ void auto_tuning(volatile T s_data[9][9][33],  DIM3  data_size, FP eb_r, FP ebx2);
+
 template <
     typename T1,
     typename T2,
@@ -116,7 +120,7 @@ template <
     bool WORKFLOW         = SPLINE3_COMPR,
     bool PROBE_PRED_ERROR = false>
 __device__ void
-spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33], FP eb_r, FP ebx2, int radius, INTERPOLATION_PARAMS intp_param);
+spline3d_layout2_interpolate(volatile T1 s_data[9][9][33], volatile T2 s_ectrl[9][9][33],  DIM3  data_size,FP eb_r, FP ebx2, int radius, INTERPOLATION_PARAMS intp_param);
 }  // namespace device_api
 
 }  // namespace cusz
@@ -682,6 +686,51 @@ __forceinline__ __device__ void interpolate_stage(
 }  // namespace
 
 /********************************************************************************/
+template <typename T,typename FP,int  LINEAR_BLOCK_SIZE>
+__device__ void cusz::device_api::auto_tuning(volatile T s_data[9][9][33],  DIM3  data_size, FP eb_r, FP ebx2){
+    //current design: 4 points: (4,4,4), (12,4,4), (20,4,4), (28,4,4). 6 configs (3 directions, lin/cubic)
+    auto itix=TIX % 32;//follow the warp
+    auto c=TIX/32;//follow the warp
+    bool predicate=(itix<4 and c<6);
+    if(predicate){
+        auto x=4+8*itix;
+        auto y=4;
+        auto z=4;
+        T pred=0;
+        auto unit = 1;
+        switch(c){
+            case 0:
+                pred = (-s_data[z - 3*unit][y][x]+9*s_data[z - unit][y][x] + 9*s_data[z + unit][y][x]-s_data[z + 3*unit][y][x]) / 16;
+                break;
+
+            case 1:
+                pred = (s_data[z - unit][y][x] + s_data[z + unit][y][x]) / 2;
+                break;
+            case 2:
+                pred = (-s_data[z ][y- 3*unit][x]+9*s_data[z ][y- unit][x] + 9*s_data[z ][y+ unit][x]-s_data[z][y + 3*unit][x]) / 16;
+                break;
+            case 3:
+                pred = (s_data[z ][y- unit][x] + s_data[z ][y+ unit][x]) / 2;
+                break;
+
+            case 4:
+                pred = (-s_data[z ][y][x- 3*unit]+9*s_data[z ][y][x- unit] + 9*s_data[z ][y][x+ unit]-s_data[z][y ][x+ 3*unit]) / 16;
+                break;
+            case 5:
+                pred = (s_data[z ][y][x- unit] + s_data[z ][y][x+ unit]) / 2;
+                break;
+
+
+
+            default:
+            break;
+        }
+        T abs_error=fabs(pred-s_data[z][y][x]);
+
+    } 
+    
+}
+
 
 template <typename T1, typename T2, typename FP,int LINEAR_BLOCK_SIZE, bool WORKFLOW, bool PROBE_PRED_ERROR>
 __device__ void cusz::device_api::spline3d_layout2_interpolate(
@@ -953,6 +1002,16 @@ __global__ void cusz::c_spline3d_infprecis_32x8x8data(
         // c_gather_anchor<T>(shmem.data, anchor, anchor_leap);
         // version 2, use global mem, correct
         c_gather_anchor<T>(data, data_size, data_leap, anchor, anchor_leap);
+
+
+        //todo:auto-tuning kernel
+
+        FP temp=0;
+        cusz::device_api::auto_tuning<T, FP,LINEAR_BLOCK_SIZE>(
+            shmem.data, data_size, eb_r, ebx2);
+
+        if(TIX==0 and BIX==0 and BIY==0 and BIZ==0)
+           printf("%d\n",temp);
 
         cusz::device_api::spline3d_layout2_interpolate<T, T, FP,LINEAR_BLOCK_SIZE, SPLINE3_COMPR, false>(
             shmem.data, shmem.ectrl, data_size, eb_r, ebx2, radius, intp_param);
