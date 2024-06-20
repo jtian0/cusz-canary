@@ -356,7 +356,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
       else if (optmatch({"-a", "--auto"})) {
         check_next();
         auto _ = std::stoi(argv[++i]);
-        ctx->intp_param.auto_tuning = _;
+        ctx->intp_param.auto_tuning = (uint8_t)_;
       }
 
       else if (optmatch({"--sycl-device"})) {
@@ -537,10 +537,11 @@ void pszctx_validate(pszctx* ctx)
 
 void pszctx_print_document(bool full_document)
 {
-  std::cout << "\n>>>>  cusz build: " << cusz::VERSION_TEXT << "\n";
+  std::cout << "\n>>>>  cuszi build: ICDE '24 artifacts\n";
 
   if (full_document)
-    std::cout << psz_helper::doc_format(psz_full_doc) << std::endl;
+    // std::cout << psz_helper::doc_format(psz_full_doc) << std::endl;
+    std::cout << "Full document is disabled temporarily." << std::endl;
   else
     std::cout << psz_short_doc << std::endl;
 }
