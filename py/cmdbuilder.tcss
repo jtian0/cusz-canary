@@ -1,0 +1,43 @@
+Screen {
+    align: center middle;
+}
+
+Horizontal {
+    align: center middle;
+    height: auto;
+}
+
+RadioSet {
+    /* width: 100%; */
+    width: auto;
+}
+
+
+CommandBuilderApp {
+    layout: horizontal;
+}
+
+
+.container {
+    margin: 0 0;
+}
+
+.command-view {
+    width: 80%;
+    margin-top: 0;
+    padding: 1 2;
+    border: solid gray;
+}
+
+.option-field {
+    /* width: 30%; */
+    width: auto;
+    border: solid $primary;
+    border-title-align: left;
+}
+
+#input-select {
+    height: 40%;
+    width: 50%;
+    /* align: center middle; */
+}
