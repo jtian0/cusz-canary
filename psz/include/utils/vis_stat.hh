@@ -20,8 +20,8 @@ double get_entropy(T* code, size_t l, size_t cap = 1024);
 
 template <typename T>
 void visualize_histogram(
-    const std::string& tag, T* _d_POD, size_t l, size_t _bins = 16,
-    bool log_freq = false, double override_min = 0, double override_max = 0,
-    bool eliminate_zeros = false, bool use_scientific_notation = true);
+    const std::string& tag, T* data, size_t const data_len,
+    size_t const bins = 17, bool log_freq = false, double override_min = 0,
+    double override_max = 0, bool use_scientific_notation = true);
 
 #endif /* E4F18FA1_7CF5_4292_B8D2_D009959C72D9 */
