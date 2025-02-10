@@ -31,12 +31,14 @@ namespace psz::module {
 template <typename T, bool UseZigZag, typename Eq>
 int GPU_c_lorenzo_nd_with_outlier(
     T* const in_data, stdlen3 const data_len3, Eq* const out_eq, void* out_outlier, f8 const ebx2,
-    f8 const ebx2_r, uint16_t const radius, void* stream);
+    f8 const ebx2_r, uint16_t const radius, void* stream, size_t const pitch_T = 0,
+    size_t const pitch_Eq = 0);
 
 template <typename T, bool UseZigZag, typename Eq>
 int GPU_x_lorenzo_nd(
     Eq* const in_eq, T* const in_outlier, T* const out_data, stdlen3 const data_len3,
-    f8 const ebx2, f8 const ebx2_r, uint16_t const radius, void* stream);
+    f8 const ebx2, f8 const ebx2_r, uint16_t const radius, void* stream, size_t const pitch_T = 0,
+    size_t const pitch_Eq = 0);
 
 template <typename TIN, typename TOUT, bool ReverseProcess>
 int GPU_lorenzo_prequant(

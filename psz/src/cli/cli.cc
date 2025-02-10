@@ -44,6 +44,16 @@ using _portable::utils::tofile;
     tofile(std::string(basename + ".cuszx").c_str(), h_decomped.get(), sizeof(T) * len); \
   }
 
+int get_ndim(psz_arguments* args)
+{
+  if (CLI_x(args) == 1 and CLI_y(args) == 1)
+    return 1;
+  else if (CLI_y(args) == 1)
+    return 2;
+  else
+    return 3;
+}
+
 int psz_run_from_CLI(int argc, char** argv)
 {
   cudaStream_t stream;
@@ -59,6 +69,7 @@ int psz_run_from_CLI(int argc, char** argv)
 
   if (args->cli->task_construct) {
     auto len = CLI_x(args) * CLI_y(args) * CLI_z(args);
+    auto const ndim = get_ndim(args);
 
     uint8_t* d_internal_compressed;
     psz_header header;
@@ -68,12 +79,26 @@ int psz_run_from_CLI(int argc, char** argv)
     psz_resource* m{nullptr};
 
     if (CLI_dtype(args) == F4) {
-      auto d_in = MAKE_UNIQUE_DEVICE(float, len);
+      GPU_unique_dptr<float[]> d_in;
+
       auto h_in = MAKE_UNIQUE_HOST(float, len);
       fromfile(args->cli->file_input, h_in.get(), len);
-      memcpy_allkinds<H2D>(d_in.get(), h_in.get(), len);
+
+      if (ndim == 2) {
+        d_in = MAKE_UNIQUE_DEVICE_PITCH(float, CLI_x(args), CLI_y(args), args->pitch_T);
+        cudaMemcpy2D(
+            /*dst*/ d_in.get(), args->pitch_T, /*src*/ h_in.get(), CLI_x(args) * sizeof(float),
+            /*copying*/ CLI_x(args) * sizeof(float),
+            /*#rows*/ CLI_y(args), /*flow*/ cudaMemcpyHostToDevice);
+      }
+      else {
+        d_in = MAKE_UNIQUE_DEVICE(float, len);
+        memcpy_allkinds<H2D>(d_in.get(), h_in.get(), len);
+      }
 
       m = psz_create_resource_manager(F4, CLI_x(args), CLI_y(args), CLI_z(args), stream);
+      /* ad hoc */ m->pitch_T = args->pitch_T;
+
       psz_compress_float(
           m,
           {CLI_predictor(args), CLI_hist(args), CLI_codec1(args), NULL_CODEC, CLI_mode(args),
@@ -81,12 +106,26 @@ int psz_run_from_CLI(int argc, char** argv)
           d_in.get(), &header, &d_internal_compressed, &compressed_len);
     }
     else if (CLI_dtype(args) == F8) {
-      auto d_in = MAKE_UNIQUE_DEVICE(double, len);
+      GPU_unique_dptr<double[]> d_in;
+
       auto h_in = MAKE_UNIQUE_HOST(double, len);
       fromfile(args->cli->file_input, h_in.get(), len);
-      memcpy_allkinds<H2D>(d_in.get(), h_in.get(), len);
+
+      if (ndim == 2) {
+        d_in = MAKE_UNIQUE_DEVICE_PITCH(double, CLI_x(args), CLI_y(args), args->pitch_T);
+        cudaMemcpy2D(
+            /*dst*/ d_in.get(), args->pitch_T, /*src*/ h_in.get(), CLI_x(args) * sizeof(double),
+            /*copying*/ CLI_x(args) * sizeof(double),
+            /*#rows*/ CLI_y(args), /*flow*/ cudaMemcpyHostToDevice);
+      }
+      else {
+        d_in = MAKE_UNIQUE_DEVICE(double, len);
+        memcpy_allkinds<H2D>(d_in.get(), h_in.get(), len);
+      }
 
       m = psz_create_resource_manager(F8, CLI_x(args), CLI_y(args), CLI_z(args), stream);
+      /* ad hoc */ m->pitch_T = args->pitch_T;
+
       psz_compress_double(
           m,
           {CLI_predictor(m), CLI_hist(args), CLI_codec1(args), NULL_CODEC, CLI_mode(args),

@@ -36,7 +36,7 @@ class CompressorBuffer {
 
   constexpr static size_t BLK = 8;  // for spline
 
-  size_t pitch;
+  size_t pitch_Eq;
 
   const bool is_comp;
   const u4 x, y, z;
@@ -82,7 +82,7 @@ class CompressorBuffer {
     if (not toggle) {
       // align 4Ki for (essentially) FZG
       if (ndim == 2)
-        d_ectrl = MAKE_UNIQUE_DEVICE_PITCH(E, x, y, pitch);
+        d_ectrl = MAKE_UNIQUE_DEVICE_PITCH(E, x, y, pitch_Eq);
       else
         d_ectrl = MAKE_UNIQUE_DEVICE(E, ALIGN_4Ki(len));
 

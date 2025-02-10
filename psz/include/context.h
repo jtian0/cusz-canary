@@ -73,6 +73,9 @@ struct psz_context {
   psz_error_status last_error;
   // tracking error status
   bool there_is_memerr;
+
+  size_t pitch_T;
+  size_t pitch_Eq;
 };
 
 typedef struct psz_context psz_context;
