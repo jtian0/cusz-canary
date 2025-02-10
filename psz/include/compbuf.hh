@@ -33,14 +33,18 @@ class CompressorBuffer {
   GPU_unique_dptr<Freq[]> d_hist;
 
   Compact* compact;
-  bool const is_comp;
 
-  u4 const x, y, z;
-  size_t const len;
-  u2 const radius;
-  u2 const bklen;
   constexpr static size_t BLK = 8;  // for spline
-  size_t const anchor512_len;       // for spline
+
+  size_t pitch;
+
+  const bool is_comp;
+  const u4 x, y, z;
+  const size_t len;
+  const u1 ndim;
+  const u2 radius;
+  const u2 bklen;
+  const u4 anchor512_len;  // for spline
 
  private:
   static size_t _div(size_t _l, size_t _subl) { return (_l - 1) / _subl + 1; };
@@ -50,22 +54,37 @@ class CompressorBuffer {
     return _div(x, BLK) * _div(y, BLK) * _div(z, BLK);
   }
 
+  static int determine_ndim(u4 x, u4 y, u4 z)
+  {
+    if (z == 1)
+      if (y == 1)
+        return 1;
+      else
+        return 2;
+    else
+      return 3;
+  }
+
  public:
   CompressorBuffer(
       u4 x, u4 y = 1, u4 z = 1, u2 _radius = 512, bool _is_comp = true,
       CompressorBufferToggle* toggle = nullptr) :
       is_comp(_is_comp),
-      radius(_radius),
-      bklen(2 * radius),
       x(x),
       y(y),
       z(z),
+      radius(_radius),
+      bklen(_radius * 2),
+      ndim(determine_ndim(x, y, z)),
       len(x * y * z),
       anchor512_len(set_len_anchor_512(x, y, z))
   {
     if (not toggle) {
       // align 4Ki for (essentially) FZG
-      d_ectrl = MAKE_UNIQUE_DEVICE(E, ALIGN_4Ki(len));
+      if (ndim == 2)
+        d_ectrl = MAKE_UNIQUE_DEVICE_PITCH(E, x, y, pitch);
+      else
+        d_ectrl = MAKE_UNIQUE_DEVICE(E, ALIGN_4Ki(len));
 
       if (is_comp) {
         compact = new Compact(len / 5);
