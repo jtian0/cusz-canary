@@ -46,9 +46,9 @@ using _portable::utils::tofile;
 
 int get_ndim(psz_arguments* args)
 {
-  if (CLI_x(args) == 1 and CLI_y(args) == 1)
+  if (CLI_z(args) == 1 and CLI_y(args) == 1)
     return 1;
-  else if (CLI_y(args) == 1)
+  else if (CLI_z(args) == 1 and CLI_y(args) != 1)
     return 2;
   else
     return 3;

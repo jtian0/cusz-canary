@@ -235,7 +235,6 @@ __global__ void KERNEL_CUHIP_x_lorenzo_2d1l__32x32(  //
     __syncthreads();
 
     // cross-wrap scan
-
     if (threadIdx.y == 0) {
       T warp_accum[NumWarps - 1];  // 0, 1, 2
 #pragma unroll
@@ -300,8 +299,8 @@ __global__ void KERNEL_CUHIP_x_lorenzo_2d1l__32x32__pitch(  //
 
   auto gix = blockIdx.x * TileDim + threadIdx.x;
   auto giy_base = blockIdx.y * TileDim + threadIdx.y * YSEQ;
-  auto get_gid_T = [&](auto i) { return (giy_base + i) * (pitch_T / sizeof(T)) + gix; };
-  auto get_gid_Eq = [&](auto i) { return (giy_base + i) * (pitch_Eq / sizeof(Eq)) + gix; };
+  auto gid_T = [&](auto i) { return (giy_base + i) * (pitch_T / sizeof(T)) + gix; };
+  auto gid_Eq = [&](auto i) { return (giy_base + i) * (pitch_Eq / sizeof(Eq)) + gix; };
 
   auto load_fuse_2d = [&]() {
 #pragma unroll
@@ -309,12 +308,12 @@ __global__ void KERNEL_CUHIP_x_lorenzo_2d1l__32x32__pitch(  //
       if (gix < data_len3.x and (giy_base + i) < data_len3.y) {
         // fuse outlier and error-quant
         if constexpr (not UseZigZag) {
-          thp_data[i] = in_outlier[get_gid_T(i)] + static_cast<T>(in_eq[get_gid_Eq(i)]) - radius;
+          thp_data[i] = in_outlier[gid_T(i)] + static_cast<T>(in_eq[gid_Eq(i)]) - radius;
         }
         else {
-          auto e = in_eq[get_gid_Eq(i)];
+          auto e = in_eq[gid_Eq(i)];
           thp_data[i] =
-              in_outlier[get_gid_T(i)] + static_cast<T>(ZigZag::decode(static_cast<EqUInt>(e)));
+              in_outlier[gid_T(i)] + static_cast<T>(ZigZag::decode(static_cast<EqUInt>(e)));
         }
       }
     }
@@ -328,7 +327,6 @@ __global__ void KERNEL_CUHIP_x_lorenzo_2d1l__32x32__pitch(  //
     __syncthreads();
 
     // cross-wrap scan
-
     if (threadIdx.y == 0) {
       T warp_accum[NumWarps - 1];  // 0, 1, 2
 #pragma unroll
@@ -366,7 +364,7 @@ __global__ void KERNEL_CUHIP_x_lorenzo_2d1l__32x32__pitch(  //
   auto decomp_write_2d = [&]() {
 #pragma unroll
     for (auto i = 0; i < YSEQ; i++) {
-      if (gix < data_len3.x and (giy_base + i) < data_len3.y) out_data[get_gid_T(i)] = thp_data[i];
+      if (gix < data_len3.x and (giy_base + i) < data_len3.y) out_data[gid_T(i)] = thp_data[i];
     }
   };
 

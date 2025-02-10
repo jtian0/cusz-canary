@@ -258,6 +258,12 @@ __global__ void KERNEL_CUHIP_c_lorenzo_2d1l__32x32__pitch(
   constexpr auto Yseq = 8;
   constexpr auto NumWarps = 4;
 
+  if (threadIdx.x == 0 && threadIdx.y == 0 && blockIdx.x == 0 && blockIdx.y == 0) {
+    printf(
+        "pitch_T = %d, pitch_Eq = %d, pitch_T / sizeof(T) = %d, pitch_Eq / sizeof(Eq) = %d\n",
+        pitch_T, pitch_Eq, pitch_T / sizeof(T), pitch_Eq / sizeof(Eq));
+  }
+
   __shared__ T exchange[NumWarps - 1][TileDim + 1];
 
   T center[Yseq + 1] = {0};
