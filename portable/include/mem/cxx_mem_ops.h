@@ -35,6 +35,8 @@ struct _memcpy_direcion<D2D> {
 };
 
 #define malloc_d malloc_device
+#define malloc_d_pitch malloc_device_pitch
+#define malloc_d_2d malloc_device_pitch
 #define malloc_h malloc_host
 #define malloc_u malloc_unified
 #define free_d free_device
@@ -56,6 +58,44 @@ T* malloc_device(size_t const len, void* stream = nullptr)
     throw std::runtime_error("[psz::error] SYCL backend does not allow stream to be null.");
   __a = sycl::malloc_device<T>(len, *((sycl::queue*)stream));
   ((sycl::queue*)stream)->wait();
+#endif
+  return __a;
+}
+
+template <typename T>
+T* malloc_device_pitch(uint32_t const x, uint32_t const y, size_t& pitch, void* stream = nullptr)
+{
+  T* __a;
+#if defined(_PORTABLE_USE_CUDA)
+  cudaMallocPitch(&__a, &pitch, x * sizeof(T), y);
+  cudaMemset2D(__a, pitch, 0, x * sizeof(T), y);
+#elif defined(_PORTABLE_USE_HIP)
+  hipMallocPitch(&__a, &pitch, x * sizeof(T), y);
+  hipMemset2D(__a, pitch, 0, x * sizeof(T), y);
+#elif defined(_PORTABLE_USE_1API)
+  if (not stream)
+    throw std::runtime_error("[psz::error] SYCL backend does not allow stream to be null.");
+
+#warning "SYCL backend uses 1D-emulated pitch allocationl."
+
+  sycl::queue& q = *(static_cast<sycl::queue*>(stream));
+
+  // **manually align pitch**
+  constexpr size_t alignment = 128;
+  pitch = ((x * sizeof(T) + (alignment - 1)) / alignment) * alignment;
+
+  // **allocate 1D buffer** (flattening 2D array)
+  __a = sycl::malloc_device<T>(y * (pitch / sizeof(T)), q);
+
+  // **memset using parallel_for**
+  q.submit([&](sycl::handler& h) {
+    h.parallel_for(sycl::range<1>(y * (pitch / sizeof(T))), [=](sycl::id<1> i) {
+      __a[i] = static_cast<T>(0);
+    });
+  });
+
+  q.wait();  // Ensure memset is completed before returning pointer
+
 #endif
   return __a;
 }

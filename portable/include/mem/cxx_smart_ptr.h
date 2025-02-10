@@ -12,6 +12,8 @@
 
 #define MAKE_UNIQUE_HOST(TYPE, LEN) GPU_make_unique(malloc_h<TYPE>(LEN), GPU_DELETER_H())
 #define MAKE_UNIQUE_DEVICE(TYPE, LEN) GPU_make_unique(malloc_d<TYPE>(LEN), GPU_DELETER_D())
+#define MAKE_UNIQUE_DEVICE_PITCH(TYPE, X, Y, PITCH) \
+  GPU_make_unique(malloc_d_pitch<TYPE>(X, Y, PITCH), GPU_DELETER_D())
 #define MAKE_UNIQUE_UNIFIED(TYPE, LEN) GPU_make_unique(malloc_u<TYPE>(LEN), GPU_DELETER_U())
 
 // smart pointer deleter for on-device buffer
