@@ -12,7 +12,7 @@
 #include <cuda_runtime.h>
 
 #include "cusz/type.h"
-#include "detail/l23_c.cu_hip.inl"
+#include "detail/l23_c.cuhip.inl"
 #include "kernel/lrz.hh"
 #include "utils/err.hh"
 #include "utils/timer.hh"

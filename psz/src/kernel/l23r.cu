@@ -20,7 +20,7 @@
 #include "utils/err.hh"
 #include "utils/timer.hh"
 // definitions
-#include "detail/l23r.cu_hip.inl"
+#include "detail/l23r.cuhip.inl"
 
 template <typename T, typename Eq, bool ZigZag>
 pszerror psz_comp_l23r(

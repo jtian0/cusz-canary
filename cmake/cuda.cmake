@@ -174,7 +174,6 @@ target_link_libraries(cusz
   lc
 )
 
-
 add_executable(cusz-bin psz/src/cli_psz.cc)
 target_link_libraries(cusz-bin PRIVATE cusz)
 set_target_properties(cusz-bin PROPERTIES OUTPUT_NAME cuszhi)

@@ -10,7 +10,7 @@
  */
 
 #include "busyheader.hh"
-#include "kernel/detail/histsp.cu_hip.inl"
+#include "kernel/detail/histsp.cuhip.inl"
 #include "kernel/hist.hh"
 #include "kernel/histsp.hh"
 #include "mem/memseg_cxx.hh"
@@ -145,7 +145,6 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
       in->dptr(), inlen, o_gpusp->dptr(), NSYM, &t_histsp_cuda, stream);
   psz::histogram<PROPER_GPU_BACKEND, T>(
       in->dptr(), inlen, o_gpu->dptr(), NSYM, &t_hist_cuda, stream);
-
 
   psz::histsp<pszpolicy::SEQ, T, uint32_t>(
       in->hptr(), inlen, o_serial->hptr(), NSYM, &t_histsp_ser);

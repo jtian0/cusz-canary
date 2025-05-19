@@ -11,7 +11,7 @@
 
 #include <cstdint>
 
-#include "detail/histsp.cu_hip.inl"
+#include "detail/histsp.cuhip.inl"
 #include "kernel/histsp.hh"
 #include "utils/timer.hh"
 
@@ -47,8 +47,8 @@ int histsp_cuda(
 
 #define SPECIALIZE_CUDA(E)                                                \
   template <>                                                             \
-  int psz::histsp<pszpolicy::CUDA, E, uint32_t>(                         \
-      E * in, uint32_t inlen, uint32_t * out_hist, uint32_t outlen,       \
+  int psz::histsp<pszpolicy::CUDA, E, uint32_t>(                          \
+      E * in, uint32_t inlen, uint32_t* out_hist, uint32_t outlen,        \
       float* milliseconds, void* stream)                                  \
   {                                                                       \
     return psz::detail::histsp_cuda<E, uint32_t>(                         \

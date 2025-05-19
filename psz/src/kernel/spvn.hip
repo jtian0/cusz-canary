@@ -1,6 +1,6 @@
 #include "criteria.gpu.hh"
 #include "cusz/type.h"
-#include "detail/spvn.cu_hip.inl"
+#include "detail/spvn.cuhip.inl"
 #include "kernel/spv.hh"
 #include "port.hh"
 #include "utils/err.hh"

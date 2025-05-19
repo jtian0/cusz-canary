@@ -1,7 +1,7 @@
 // deps
 #include "port.hh"
 // definitions
-#include "detail/hfcodec_drv.cu_hip.inl"
+#include "detail/hfcodec_drv.cuhip.inl"
 
 #define HF_CODEC_INIT(E, H, M)                                             \
   template void psz::hf_encode_coarse_rev2<E, H, M>(                       \
