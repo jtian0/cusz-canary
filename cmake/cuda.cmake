@@ -111,13 +111,13 @@ target_link_libraries(psz_cu_utils
 )
 
 add_library(psz_cu_phf 
-  psz/src/hf/hfclass.cu
-  psz/src/hf/hfcodec.cu
-  psz/src/hf/hfbk_impl1.seq.cc 
-  psz/src/hf/hfbk_impl2.seq.cc
-  psz/src/hf/hfbk_internal.seq.cc
-  psz/src/hf/hfbk.seq.cc
-  psz/src/hf/hfcanon.seq.cc
+  codec/hf/src/hf_bk_impl1.seq.cc 
+  codec/hf/src/hf_bk_impl2.seq.cc
+  codec/hf/src/hf_bk_internal.seq.cc
+  codec/hf/src/hf_bk.seq.cc
+  codec/hf/src/hf_kernels.cu
+  codec/hf/src/hf_ood.cu
+  codec/hf/src/hf_canon.seq.cc
 )
 target_link_libraries(psz_cu_phf 
   PUBLIC

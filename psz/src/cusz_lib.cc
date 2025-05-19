@@ -15,7 +15,7 @@
 #include "context.h"
 #include "cusz.h"
 #include "cusz/type.h"
-#include "hf/hf.hh"
+#include "hf.hh"
 #include "port.hh"
 #include "tehm.hh"
 
@@ -80,8 +80,7 @@ pszerror psz_compress(
   if (comp->type == F4) {
     auto cor = (cusz::CompressorF4*)(comp->compressor);
 
-    cor->compress(
-        comp->ctx, (f4*)(in), compressed, comp_bytes, stream);
+    cor->compress(comp->ctx, (f4*)(in), compressed, comp_bytes, stream);
     cor->export_header(*header);
     cor->export_timerecord((psz::TimeRecord*)record);
   }
@@ -110,13 +109,15 @@ pszerror psz_decompress_init(pszcompressor* comp, pszheader* header)
 
 pszerror psz_decompress(
     pszcompressor* comp, pszout compressed, size_t const comp_len,
-    void* decompressed, void* outlier_tmp, pszlen const decomp_len, void* record, void* stream)
+    void* decompressed, void* outlier_tmp, pszlen const decomp_len,
+    void* record, void* stream)
 {
   if (comp->type == F4) {
     auto cor = (cusz::CompressorF4*)(comp->compressor);
 
     cor->decompress(
-        comp->header, compressed, (f4*)(decompressed), (f4*)(outlier_tmp), (GpuStreamT)stream);
+        comp->header, compressed, (f4*)(decompressed), (f4*)(outlier_tmp),
+        (GpuStreamT)stream);
     cor->export_timerecord((psz::TimeRecord*)record);
   }
   else {

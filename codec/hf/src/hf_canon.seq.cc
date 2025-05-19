@@ -9,11 +9,11 @@
  *
  */
 
+#include "hfcanon.hh"
 
 #include "busyheader.hh"
 #include "cusz/type.h"
-#include "hf/hfcanon.hh"
-#include "hf/hfword.hh"
+#include "hfword.hh"
 
 template <typename E, typename H>
 int canonize(u1* bin, uint32_t const bklen)
@@ -175,6 +175,5 @@ INIT(u4, u8)
 INIT(u1, ull)
 INIT(u2, ull)
 INIT(u4, ull)
-
 
 #undef INIT

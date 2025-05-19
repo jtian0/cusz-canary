@@ -15,10 +15,9 @@
  */
 
 #include "busyheader.hh"
-#include "hf/hf.hh"
-#include "hf/hfbk.cu.hh"
-#include "hf/hfbk.hh"
-#include "hf/hfcodec.hh"
+#include "hf.hh"
+#include "hfbk.hh"
+#include "hfcodec.hh"
 #include "mem/memseg_cxx.hh"
 #include "typing.hh"
 #include "utils/err.hh"
@@ -29,7 +28,7 @@
 
 #include "port.hh"
 // definitions
-#include "detail/hfclass.cuhip.inl"
+#include "hf_ood.cuhip.inl"
 
 template class cusz::HuffmanCodec<u1, u4>;
 template class cusz::HuffmanCodec<u2, u4>;

@@ -16,7 +16,7 @@
 #include "context.h"
 #include "cusz/type.h"
 #include "header.h"
-#include "hf/hf.hh"
+#include "hf.hh"
 #include "mem.hh"
 #include "typing.hh"
 
@@ -87,7 +87,7 @@ class Compressor {
   pszmempool_cxx<T, E, H>* mem;
 
  public:
-  Compressor(){};
+  Compressor() {};
   ~Compressor();
 
   // public methods
@@ -107,7 +107,8 @@ class Compressor {
   Compressor* decompress_scatter(pszheader*, BYTE*, T*, uninit_stream_t);
   Compressor* decompress_decode(pszheader*, BYTE*, uninit_stream_t);
   Compressor* decompress_tcms(pszheader*, BYTE*, uninit_stream_t);
-  Compressor* decompress_predict(pszheader*, BYTE*, T*, T*, T*, uninit_stream_t);
+  Compressor* decompress_predict(
+      pszheader*, BYTE*, T*, T*, T*, uninit_stream_t);
   Compressor* decompress_collect_kerneltime(pszheader*);
 
   Compressor* clear_buffer();

@@ -1,8 +1,9 @@
+#include "hfbk.hh"
+
 #include "busyheader.hh"
 #include "cusz/type.h"
-#include "hf/hfbk.hh"
-#include "hf/hfbk_impl.hh"
-#include "hf/hfcanon.hh"
+#include "hfbk_impl.hh"
+#include "hfcanon.hh"
 #include "utils/timer.hh"
 
 template <typename E, typename H>

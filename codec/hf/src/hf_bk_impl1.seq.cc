@@ -10,11 +10,10 @@
  * top-level directory.
  */
 
-
 #include "busyheader.hh"
 #include "cusz/type.h"
-#include "hf/hfbk_impl.hh"
-#include "hf/hfword.hh"
+#include "hfbk_impl.hh"
+#include "hfword.hh"
 #include "utils/timer.hh"
 
 HuffmanTree* create_tree_serial(int state_num)
@@ -201,7 +200,8 @@ void hf_buildtree_impl1(
       if (freq[i]) qinsert(tree, new_node(tree, freq[i], i, 0, 0));
     while (tree->qend > 2)
       qinsert(tree, new_node(tree, 0, 0, qremove(tree), qremove(tree)));
-    __pszhf_stack<NodeType, sizeof(H)>::template inorder_traverse<H>(tree->qq[1], book);
+    __pszhf_stack<NodeType, sizeof(H)>::template inorder_traverse<H>(
+        tree->qq[1], book);
 
     auto b = hires::now();
     auto t = static_cast<duration_t>(b - a).count() * 1000;

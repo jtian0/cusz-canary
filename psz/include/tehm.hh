@@ -15,7 +15,7 @@
 
 #include "compressor.hh"
 #include "cusz/type.h"
-#include "hf/hf.hh"
+#include "hf.hh"
 
 namespace psz {
 

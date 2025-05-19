@@ -13,7 +13,7 @@
 
 #include "busyheader.hh"
 #include "context.h"
-#include "hf/hfword.hh"
+#include "hfword.hh"
 
 // resemble the one defined in dbg_cu.inl
 #define __PSZSANITIZE_VAR(LOC, VAR)       \
@@ -95,7 +95,8 @@ void psz::sanitize<T, E, H>::sanitize_hist_out(
       h_hist, h_hist + bklen, [quantcode = 0, idx2 = 0](auto freq) mutable {
         if (freq != 0)
           printf(
-              "\e[90m[psz::dbg::hist_out]\e[0m quantcode=%4d (nonzero %4d-th)\tfreq=%u\n",
+              "\e[90m[psz::dbg::hist_out]\e[0m quantcode=%4d (nonzero "
+              "%4d-th)\tfreq=%u\n",
               quantcode, idx2++, freq);
         quantcode++;
       });

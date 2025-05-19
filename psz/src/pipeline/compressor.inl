@@ -20,7 +20,7 @@
 #include "compressor.hh"
 #include "cusz/type.h"
 #include "header.h"
-#include "hf/hf.hh"
+#include "hf.hh"
 #include "kernel.hh"
 #include "lc_gen/lc_gen.h"
 #include "log.hh"
