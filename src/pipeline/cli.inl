@@ -20,9 +20,9 @@
 //
 #include "context.h"
 #include "dryrun.hh"
+#include "lc_gen/lc_gen.h"
 #include "mem.hh"
 #include "tehm.hh"
-#include "lc/lc.h"
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
 #include "utils/analyzer.hh"
 #endif
@@ -129,7 +129,7 @@ class CLI {
 
     // adjust eb
     if (ctx->mode == Rel) {
-      ctx->rel_eb=ctx->eb;
+      ctx->rel_eb = ctx->eb;
       double _1, _2, rng;
       input->extrema_scan(_1, _2, rng);
       ctx->eb *= rng;
@@ -191,11 +191,12 @@ class CLI {
     pszlen decomp_len = pszlen{header->x, header->y, header->z, 1};
 
     psz_decompress_init(compressor, header);
-    //compressor->header->intp_param = ctx->intp_param;
-    
+    // compressor->header->intp_param = ctx->intp_param;
+
     psz_decompress(
         compressor, compressed->dptr(), psz_utils::filesize(header),
-        decompressed->dptr(), outlier_tmp->dptr(), decomp_len, (void*)&timerecord, stream);
+        decompressed->dptr(), outlier_tmp->dptr(), decomp_len,
+        (void*)&timerecord, stream);
 
     if (ctx->report_time)
       psz::TimeRecordViewer::view_decompression(

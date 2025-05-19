@@ -1,79 +1,51 @@
-/*
-This file is part of the LC framework for synthesizing high-speed parallel lossless and error-bounded lossy data compression and decompression algorithms for CPUs and GPUs.
-
-BSD 3-Clause License
-
-Copyright (c) 2021-2024, Noushin Azami, Alex Fallin, Brandon Burtchell, Andrew Rodriguez, Benila Jerald, Yiqian Liu, and Martin Burtscher
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-URL: The latest version of this code is available at https://github.com/burtscher/LC-framework.
-
-Sponsor: This code is based upon work supported by the U.S. Department of Energy, Office of Science, Office of Advanced Scientific Research (ASCR), under contract DE-SC0022223.
-*/
-
+// This file compiles a specialzed pipeline based on LC framework.
+// See copyright and license (BSD 3-Clause) in `third_party/lc`.
 
 #ifndef NDEBUG
 #define NDEBUG
 #endif
 
 using byte = unsigned char;
-static const int CS = 1024 * 16;  // chunk size (in bytes) [must be multiple of 8]
-static const int TPB = 512;  // threads per block [must be power of 2 and at least 128]
+static const int CS =
+    1024 * 16;  // chunk size (in bytes) [must be multiple of 8]
+static const int TPB =
+    512;  // threads per block [must be power of 2 and at least 128]
 #if defined(__AMDGCN_WAVEFRONT_SIZE) && (__AMDGCN_WAVEFRONT_SIZE == 64)
 #define WS 64
 #else
 #define WS 32
 #endif
 
-#include <string>
-#include <cmath>
-#include <cassert>
-#include <stdexcept>
 #include <cuda.h>
 #include <cuda_runtime_api.h>
-#include "lc/sum_reduction.h"
-#include "lc/max_scan.h"
-#include "lc/prefix_sum.h"
-#include "lc/components/d_BIT_4.h"
-#include "lc/components/d_RRE_2.h"
-#include "lc/components/d_RZE_1.h"
-#include "lc/lc.h"
+
+#include <cassert>
+#include <cmath>
+#include <stdexcept>
+#include <string>
+
+#include "../lc/include/max_scan.h"
+#include "../lc/include/prefix_sum.h"
+#include "../lc/include/sum_reduction.h"
+//
+#include "../lc/components/d_BIT_4.h"
+#include "../lc/components/d_RRE_2.h"
+#include "../lc/components/d_RZE_1.h"
+#include "lc_gen/lc_gen.h"
 
 // copy (len) bytes from shared memory (source) to global memory (destination)
 // source must we word aligned
-static inline __device__ void s2g(void* const __restrict__ destination, const void* const __restrict__ source, const int len)
+static inline __device__ void s2g(
+    void* const __restrict__ destination,
+    const void* const __restrict__ source, const int len)
 {
   const int tid = threadIdx.x;
   const byte* const __restrict__ input = (byte*)source;
   byte* const __restrict__ output = (byte*)destination;
   if (len < 128) {
     if (tid < len) output[tid] = input[tid];
-  } else {
+  }
+  else {
     const int nonaligned = (int)(size_t)output;
     const int wordaligned = (nonaligned + 3) & ~3;
     const int linealigned = (nonaligned + 127) & ~127;
@@ -83,19 +55,19 @@ static inline __device__ void s2g(void* const __restrict__ destination, const vo
     if (bcnt == 0) {
       int* const __restrict__ out_w = (int*)output;
       if (tid < wcnt) out_w[tid] = in_w[tid];
-      for (int i = tid + wcnt; i < len / 4; i += TPB) {
-        out_w[i] = in_w[i];
-      }
+      for (int i = tid + wcnt; i < len / 4; i += TPB) { out_w[i] = in_w[i]; }
       if (tid < (len & 3)) {
         const int i = len - 1 - tid;
         output[i] = input[i];
       }
-    } else {
+    }
+    else {
       const int shift = bcnt * 8;
       const int rlen = len - bcnt;
       int* const __restrict__ out_w = (int*)&output[bcnt];
       if (tid < bcnt) output[tid] = input[tid];
-      if (tid < wcnt) out_w[tid] = __funnelshift_r(in_w[tid], in_w[tid + 1], shift);
+      if (tid < wcnt)
+        out_w[tid] = __funnelshift_r(in_w[tid], in_w[tid + 1], shift);
       for (int i = tid + wcnt; i < rlen / 4; i += TPB) {
         out_w[i] = __funnelshift_r(in_w[i], in_w[i + 1], shift);
       }
@@ -107,17 +79,14 @@ static inline __device__ void s2g(void* const __restrict__ destination, const vo
   }
 }
 
-
 static __device__ int g_chunk_counter;
 
+static __global__ void d_reset() { g_chunk_counter = 0; }
 
-static __global__ void d_reset()
-{
-  g_chunk_counter = 0;
-}
-
-
-static inline __device__ void propagate_carry(const int value, const int chunkID, volatile int* const __restrict__ fullcarry, int* const __restrict__ s_fullc)
+static inline __device__ void propagate_carry(
+    const int value, const int chunkID,
+    volatile int* const __restrict__ fullcarry,
+    int* const __restrict__ s_fullc)
 {
   if (threadIdx.x == TPB - 1) {  // last thread
     fullcarry[chunkID] = (chunkID == 0) ? value : -value;
@@ -130,9 +99,7 @@ static inline __device__ void propagate_carry(const int value, const int chunkID
       int val = -1;
       __syncwarp();  // not optional
       do {
-        if (cidm1ml >= 0) {
-          val = fullcarry[cidm1ml];
-        }
+        if (cidm1ml >= 0) { val = fullcarry[cidm1ml]; }
       } while ((__any_sync(~0, val == 0)) || (__all_sync(~0, val <= 0)));
 #if defined(WS) && (WS == 64)
       const long long mask = __ballot_sync(~0, val > 0);
@@ -160,16 +127,18 @@ static inline __device__ void propagate_carry(const int value, const int chunkID
   }
 }
 
-
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ == 800)
 static __global__ __launch_bounds__(TPB, 3)
 #else
 static __global__ __launch_bounds__(TPB, 2)
 #endif
-void d_encode_bitr(const byte* const __restrict__ input, const int insize, byte* const __restrict__ output, int* const __restrict__ outsize, int* const __restrict__ fullcarry)
+    void d_encode_bitr(
+        const byte* const __restrict__ input, const int insize,
+        byte* const __restrict__ output, int* const __restrict__ outsize,
+        int* const __restrict__ fullcarry)
 {
   // allocate shared memory buffer
-  __shared__ long long chunk [3 * (CS / sizeof(long long))];
+  __shared__ long long chunk[3 * (CS / sizeof(long long))];
 
   // split into 3 shared memory buffers
   byte* in = (byte*)&chunk[0 * (CS / sizeof(long long))];
@@ -199,30 +168,35 @@ void d_encode_bitr(const byte* const __restrict__ input, const int insize, byte*
     const int osize = min(CS, insize - base);
     long long* const input_l = (long long*)&input[base];
     long long* const out_l = (long long*)out;
-    for (int i = tid; i < osize / 8; i += TPB) {
-      out_l[i] = input_l[i];
-    }
+    for (int i = tid; i < osize / 8; i += TPB) { out_l[i] = input_l[i]; }
     const int extra = osize % 8;
-    if (tid < extra) out[osize - extra + tid] = input[base + osize - extra + tid];
+    if (tid < extra)
+      out[osize - extra + tid] = input[base + osize - extra + tid];
 
     // encode chunk
     __syncthreads();  // chunk produced, chunk[last] consumed
     int csize = osize;
     bool good = true;
     if (good) {
-      byte* tmp = in; in = out; out = tmp;
+      byte* tmp = in;
+      in = out;
+      out = tmp;
       good = d_BIT_4(csize, in, out, temp);
-     __syncthreads();
+      __syncthreads();
     }
     if (good) {
-      byte* tmp = in; in = out; out = tmp;
+      byte* tmp = in;
+      in = out;
+      out = tmp;
       good = d_RRE_2(csize, in, out, temp);
-     __syncthreads();
+      __syncthreads();
     }
     if (good) {
-      byte* tmp = in; in = out; out = tmp;
+      byte* tmp = in;
+      in = out;
+      out = tmp;
       good = d_RZE_1(csize, in, out, temp);
-     __syncthreads();
+      __syncthreads();
     }
 
     // handle carry
@@ -234,11 +208,10 @@ void d_encode_bitr(const byte* const __restrict__ input, const int insize, byte*
     if (csize == osize) {
       // store original data
       long long* const out_l = (long long*)out;
-      for (int i = tid; i < osize / 8; i += TPB) {
-        out_l[i] = input_l[i];
-      }
+      for (int i = tid; i < osize / 8; i += TPB) { out_l[i] = input_l[i]; }
       const int extra = osize % 8;
-      if (tid < extra) out[osize - extra + tid] = input[base + osize - extra + tid];
+      if (tid < extra)
+        out[osize - extra + tid] = input[base + osize - extra + tid];
     }
     __syncthreads();  // "out" done, temp produced
 
@@ -256,35 +229,53 @@ void d_encode_bitr(const byte* const __restrict__ input, const int insize, byte*
   } while (true);
 }
 
-
-struct GPUTimer
-{
+struct GPUTimer {
   cudaEvent_t beg, end;
-  GPUTimer() {cudaEventCreate(&beg); cudaEventCreate(&end);}
-  ~GPUTimer() {cudaEventDestroy(beg); cudaEventDestroy(end);}
-  void start() {cudaEventRecord(beg, 0);}
-  double stop() {cudaEventRecord(end, 0); cudaEventSynchronize(end); float ms; cudaEventElapsedTime(&ms, beg, end); return ms;}
+  GPUTimer()
+  {
+    cudaEventCreate(&beg);
+    cudaEventCreate(&end);
+  }
+  ~GPUTimer()
+  {
+    cudaEventDestroy(beg);
+    cudaEventDestroy(end);
+  }
+  void start() { cudaEventRecord(beg, 0); }
+  double stop()
+  {
+    cudaEventRecord(end, 0);
+    cudaEventSynchronize(end);
+    float ms;
+    cudaEventElapsedTime(&ms, beg, end);
+    return ms;
+  }
 };
-
 
 static void CheckCuda(const int line)
 {
   cudaError_t e;
   cudaDeviceSynchronize();
   if (cudaSuccess != (e = cudaGetLastError())) {
-    fprintf(stderr, "CUDA error %d on line %d: %s\n\n", e, line, cudaGetErrorString(e));
+    fprintf(
+        stderr, "CUDA error %d on line %d: %s\n\n", e, line,
+        cudaGetErrorString(e));
     throw std::runtime_error("LC error");
   }
 }
 
-
-void BITR_COMPRESS(uint8_t* input, size_t insize, uint8_t** output, size_t* outsize, float* time, void* stream)
+void BITR_COMPRESS(
+    uint8_t* input, size_t insize, uint8_t** output, size_t* outsize,
+    float* time, void* stream)
 {
   // get GPU info
   cudaSetDevice(0);
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
-  if ((deviceProp.major == 9999) && (deviceProp.minor == 9999)) {fprintf(stderr, "ERROR: no CUDA capable device detected\n\n"); throw std::runtime_error("LC error");}
+  if ((deviceProp.major == 9999) && (deviceProp.minor == 9999)) {
+    fprintf(stderr, "ERROR: no CUDA capable device detected\n\n");
+    throw std::runtime_error("LC error");
+  }
   const int SMs = deviceProp.multiProcessorCount;
   const int mTpSM = deviceProp.maxThreadsPerMultiProcessor;
   const int blocks = SMs * (mTpSM / TPB);
@@ -293,28 +284,27 @@ void BITR_COMPRESS(uint8_t* input, size_t insize, uint8_t** output, size_t* outs
   const int maxsize = 3 * sizeof(int) + chunks * sizeof(short) + chunks * CS;
 
   byte* d_encoded;
-  cudaMalloc((void **)&d_encoded, maxsize);
+  cudaMalloc((void**)&d_encoded, maxsize);
   int* d_encsize;
-  cudaMalloc((void **)&d_encsize, sizeof(int));
+  cudaMalloc((void**)&d_encsize, sizeof(int));
   CheckCuda(__LINE__);
 
-
   int* d_fullcarry;
-  cudaMalloc((void **)&d_fullcarry, chunks * sizeof(int));
+  cudaMalloc((void**)&d_fullcarry, chunks * sizeof(int));
   d_reset<<<1, 1>>>();
   cudaMemset(d_fullcarry, 0, chunks * sizeof(int));
   GPUTimer dtimer;
   dtimer.start();
-  d_encode_bitr<<<blocks, TPB>>>(input, (int)insize, d_encoded, d_encsize, d_fullcarry);
+  d_encode_bitr<<<blocks, TPB>>>(
+      input, (int)insize, d_encoded, d_encsize, d_fullcarry);
   *time = (float)dtimer.stop();
   cudaFree(d_fullcarry);
   CheckCuda(__LINE__);
 
-
   // get encoded GPU result
   int dencsize = 0;
   cudaMemcpy(&dencsize, d_encsize, sizeof(int), cudaMemcpyDeviceToHost);
-  
+
   *outsize = (size_t)(dencsize);
   *output = d_encoded;
 

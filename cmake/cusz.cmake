@@ -22,6 +22,7 @@ target_include_directories(
   pszcompile_settings
   INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
             $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cusz>)
@@ -127,15 +128,22 @@ target_link_libraries(pszcomp_cu PUBLIC pszcompile_settings pszkernel_cu
 add_library(psztestframe_cu src/pipeline/testframe.cc)
 target_link_libraries(psztestframe_cu PUBLIC pszcomp_cu pszmem pszutils_seq)
 
-add_library(lc src/lc/comp-tcms.cu src/lc/decomp-tcms.cu 
-            src/lc/comp-bitr.cu src/lc/decomp-bitr.cu
-            src/lc/comp-rtr.cu src/lc/decomp-rtr.cu)
+add_library(lc 
+            third_party/lc_gen/comp-tcms.cu third_party/lc_gen/decomp-tcms.cu 
+            third_party/lc_gen/comp-bitr.cu third_party/lc_gen/decomp-bitr.cu
+            third_party/lc_gen/comp-rtr.cu  third_party/lc_gen/decomp-rtr.cu)
+target_include_directories(
+  pszcompile_settings
+  INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third_party/>
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/cusz>)
 target_compile_options(lc
   PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:
       -O3
-      -arch=sm_89
-      -arch=sm_80
       -fmad=false>
     $<$<COMPILE_LANGUAGE:CXX>:
       -O3
