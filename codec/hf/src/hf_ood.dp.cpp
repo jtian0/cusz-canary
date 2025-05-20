@@ -14,9 +14,10 @@
  *
  */
 
-#include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "busyheader.hh"
+#include <sycl/sycl.hpp>
+
+#include "detail/busyheader.hh"
 #include "hf/hf.hh"
 #include "hf/hfbk.hh"
 #include "hf/hfcodec.hh"
@@ -33,4 +34,3 @@
 template class cusz::HuffmanCodec<u1, u4>;
 template class cusz::HuffmanCodec<u2, u4>;
 template class cusz::HuffmanCodec<u4, u4>;
-

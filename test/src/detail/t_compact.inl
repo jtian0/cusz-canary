@@ -10,10 +10,10 @@
  */
 
 #include "../rand.hh"
-#include "busyheader.hh"
+#include "cusz/type.h"
+#include "detail/busyheader.hh"
 #include "mem/compact.hh"
 #include "port.hh"
-#include "cusz/type.h"
 
 template <
     typename T, int TileDim = 256, typename CompactVal = T,
@@ -73,9 +73,8 @@ void test_compaction_serial(T* in, uint32_t len, Compact out)
 
 bool f()
 {
-
-using CompactGpu = typename CompactDram<PROPER_GPU_BACKEND, float>::Compact;
-using CompactSeq = typename CompactDram<SEQ, float>::Compact;
+  using CompactGpu = typename CompactDram<PROPER_GPU_BACKEND, float>::Compact;
+  using CompactSeq = typename CompactDram<SEQ, float>::Compact;
 
   constexpr auto TilDim = 256;
 

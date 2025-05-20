@@ -1,8 +1,8 @@
 #include "pipeline/testframe.hh"
 
-#include "busyheader.hh"
 #include "compressor.hh"
-#include "context.h"
+#include "cusz/context.h"
+#include "detail/busyheader.hh"
 #include "hf.hh"
 #include "kernel.hh"
 #include "mem.hh"

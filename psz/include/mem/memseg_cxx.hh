@@ -15,10 +15,10 @@
 
 #include <cstddef>
 
-#include "busyheader.hh"
 #include "cusz/type.h"
-#include "memseg_cxx/definition.hh"
+#include "detail/busyheader.hh"
 #include "memseg.h"
+#include "memseg_cxx/definition.hh"
 #include "stat/compare.hh"
 #include "typing.hh"
 

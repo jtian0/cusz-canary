@@ -18,7 +18,7 @@
 #include <tuple>
 #include <unordered_map>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "utils/vis_stat.hh"
 
 using std::tuple;

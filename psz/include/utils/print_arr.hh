@@ -12,8 +12,8 @@
 #ifndef AB8F2CD4_0C03_41C5_8FB0_0923DA702486
 #define AB8F2CD4_0C03_41C5_8FB0_0923DA702486
 
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 
 namespace psz {
 
@@ -51,7 +51,5 @@ void peek_data(T* h_arr, size_t num)
 }
 
 }  // namespace psz
-
-
 
 #endif /* AB8F2CD4_0C03_41C5_8FB0_0923DA702486 */

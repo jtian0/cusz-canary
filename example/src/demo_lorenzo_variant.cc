@@ -9,7 +9,7 @@
  *
  */
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "kernel/l23.hh"
 #include "port.hh"
 #include "utils/err.hh"

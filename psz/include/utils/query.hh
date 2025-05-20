@@ -1,8 +1,8 @@
 #ifndef C5CF22D0_3237_4B41_9907_531D96EAA7F0
 #define C5CF22D0_3237_4B41_9907_531D96EAA7F0
 
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 #include "port.hh"
 //
 #include "query/query_cpu.hh"
@@ -18,8 +18,7 @@
 
 // #define GPU_QUERY \
 //   l0_diagnostics::show_device(dpct::get_current_device().default_queue());
-#define GPU_QUERY \
-  l0_diagnostics::show_device();
+#define GPU_QUERY l0_diagnostics::show_device();
 
 #endif
 

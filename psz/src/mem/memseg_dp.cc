@@ -1,7 +1,7 @@
 #include <dpct/dpct.hpp>
 #include <sycl/sycl.hpp>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "mem/memseg.h"
 #include "utils/err.hh"
 

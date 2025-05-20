@@ -11,7 +11,7 @@
  *
  */
 
-#include "context.h"
+#include "cusz/context.h"
 
 #include <cstring>
 #include <regex>
@@ -19,8 +19,8 @@
 #include <stdexcept>
 #include <unordered_map>
 
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 #include "utils/config.hh"
 #include "utils/document.hh"
 #include "utils/format.hh"
@@ -174,15 +174,17 @@ void pszctx_parse_control_string(
     }
     else if (optmatch({"auto_tuning"})) {
       // ctx->intp_param.auto_tuning = psz_helper::str2int(v);
-      if (v == "cr-first") {
-        ctx->intp_param.auto_tuning = 3;
-      } else if (v == "rd-first") {
+      if (v == "cr-first") { ctx->intp_param.auto_tuning = 3; }
+      else if (v == "rd-first") {
         ctx->intp_param.auto_tuning = 6;
-      } else {
+      }
+      else {
         try {
-          ctx->intp_param.auto_tuning = static_cast<uint8_t>(psz_helper::str2int(v));
-        } catch (...) {
-          std::cerr << "[Error] Invalid auto_tuning value: " << v 
+          ctx->intp_param.auto_tuning =
+              static_cast<uint8_t>(psz_helper::str2int(v));
+        }
+        catch (...) {
+          std::cerr << "[Error] Invalid auto_tuning value: " << v
                     << ". Expected cr-first, rd-first, or an integer.\n";
           exit(1);
         }
@@ -390,16 +392,19 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         // auto _ = std::stoi(argv[++i]);
         // ctx->intp_param.auto_tuning = (uint8_t)_;
         std::string mode = argv[++i];
-        if (mode == "cr-first") {
-          ctx->intp_param.auto_tuning = 3;
-        } else if (mode == "rd-first") {
+        if (mode == "cr-first") { ctx->intp_param.auto_tuning = 3; }
+        else if (mode == "rd-first") {
           ctx->intp_param.auto_tuning = 6;
-        } else {
+        }
+        else {
           try {
-            ctx->intp_param.auto_tuning = static_cast<uint8_t>(std::stoi(mode));
-          } catch (...) {
-            std::cerr << "[Error] Unknown auto-tuning mode: " << mode 
-                      << ". Supported: cr-first, rd-first, or an integer value.\n";
+            ctx->intp_param.auto_tuning =
+                static_cast<uint8_t>(std::stoi(mode));
+          }
+          catch (...) {
+            std::cerr
+                << "[Error] Unknown auto-tuning mode: " << mode
+                << ". Supported: cr-first, rd-first, or an integer value.\n";
             exit(1);
           }
         }
@@ -407,9 +412,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
       else if (optmatch({"-s", "--scheme"})) {
         check_next();
         auto _ = std::string(argv[++i]);
-        if (_ == "tp") {
-          ctx->use_huffman = false;
-        }
+        if (_ == "tp") { ctx->use_huffman = false; }
         else if (_ == "cr") {
           ctx->use_huffman = true;
         }
@@ -438,7 +441,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         int size = asprintf(&notif, "%d: %s", i, argv[i]);
         cerr << LOG_ERR << notif_prefix << "\e[1m" << notif << "\e[0m"
              << "\n";
-        cerr << std::string(LOG_NULL.length() + strlen(notif_prefix), ' ');
+        cerr << std::string(strlen(LOG_NULL) + strlen(notif_prefix), ' ');
         cerr << "\e[1m";
         cerr << std::string(strlen(notif), '~');
         cerr << "\e[0m\n";
@@ -454,9 +457,9 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
       cerr << LOG_ERR << notif_prefix << "\e[1m" << notif
            << "\e[0m"
               "\n"
-           << std::string(LOG_NULL.length() + strlen(notif_prefix), ' ')  //
-           << "\e[1m"                                                     //
-           << std::string(strlen(notif), '~')                             //
+           << std::string(strlen(LOG_NULL) + strlen(notif_prefix), ' ')  //
+           << "\e[1m"                                                    //
+           << std::string(strlen(notif), '~')                            //
            << "\e[0m\n";
 
       std::cout << LOG_ERR << "Exiting..." << endl;
@@ -593,7 +596,7 @@ void pszctx_validate(pszctx* ctx)
 
 void pszctx_print_document(bool full_document)
 {
-  //std::cout << "\n>>>>  cuszi build: ICDE '24 artifacts\n";
+  // std::cout << "\n>>>>  cuszi build: ICDE '24 artifacts\n";
 
   if (full_document)
     // std::cout << psz_helper::doc_format(psz_full_doc) << std::endl;

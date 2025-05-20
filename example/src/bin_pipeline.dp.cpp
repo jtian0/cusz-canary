@@ -11,9 +11,9 @@
 
 #include <stdexcept>
 
-#include "busyheader.hh"
-#include "context.h"
 #include "cusz.h"
+#include "cusz/context.h"
+#include "detail/busyheader.hh"
 #include "ex_utils.hh"
 #include "hf/hf.hh"
 #include "kernel.hh"
@@ -129,7 +129,8 @@ void run(pszctx* ctx, string const subcmd, char* fname, char* config_str)
     psz_testframe<f4>::pred_comp_decomp(
         ctx, cor, data->dptr(), xdata->dptr(), stream);
     psz::eval_dataquality_cpu(
-        xdata->control({D2H})->hptr(), data->control({D2H})->hptr(), data->len(), data->bytes());
+        xdata->control({D2H})->hptr(), data->control({D2H})->hptr(),
+        data->len(), data->bytes());
   }
   else if (subcmd == "pred-hist") {
     psz_testframe<f4>::pred_hist_comp(ctx, cor, data->dptr(), stream);

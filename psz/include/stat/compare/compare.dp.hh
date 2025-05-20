@@ -1,7 +1,7 @@
 #ifndef A9FDC8E9_448A_4A62_BC94_12FB43250B14
 #define A9FDC8E9_448A_4A62_BC94_12FB43250B14
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 
 namespace psz {
 

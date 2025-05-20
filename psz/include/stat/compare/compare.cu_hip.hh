@@ -1,7 +1,7 @@
 #ifndef C81325C8_34E8_443A_AC64_8524112A367F
 #define C81325C8_34E8_443A_AC64_8524112A367F
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 
 namespace psz {
 

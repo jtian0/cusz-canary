@@ -11,8 +11,8 @@
 
 #include "log/sanitize.hh"
 
-#include "busyheader.hh"
-#include "context.h"
+#include "cusz/context.h"
+#include "detail/busyheader.hh"
 #include "hfword.hh"
 
 // resemble the one defined in dbg_cu.inl

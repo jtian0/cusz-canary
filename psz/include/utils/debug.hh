@@ -14,7 +14,7 @@
 
 #include <cstdio>
 
-#include "header.h"
+#include "cusz/header.h"
 
 enum class DebugType { Header, HfHeader };
 

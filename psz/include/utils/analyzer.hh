@@ -16,7 +16,7 @@
 #include <thrust/extrema.h>
 #include <thrust/sort.h>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "hfcodec.hh"
 #include "utils/timer.hh"
 

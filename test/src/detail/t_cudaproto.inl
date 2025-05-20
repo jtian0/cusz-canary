@@ -16,7 +16,7 @@
 
 #include <typeinfo>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "kernel/detail/lproto.inl"
 #include "mem/compact.hh"
 #include "mem/memseg_cxx.hh"

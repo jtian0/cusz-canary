@@ -14,7 +14,7 @@
 #ifndef CUSZ_KERNEL_CODEC_HUFFMAN_CUH
 #define CUSZ_KERNEL_CODEC_HUFFMAN_CUH
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "hfcodec.hh"
 #include "hfstruct.h"
 #include "typing.hh"

@@ -12,7 +12,7 @@
 #include <dpct/dpct.hpp>
 #include <sycl/sycl.hpp>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "kernel/detail/histsp.dp.inl"
 #include "kernel/hist.hh"
 #include "kernel/histsp.hh"

@@ -16,10 +16,10 @@
 
 #include <stdexcept>
 
-#include "busyheader.hh"
 #include "compressor.hh"
+#include "cusz/header.h"
 #include "cusz/type.h"
-#include "header.h"
+#include "detail/busyheader.hh"
 #include "hf.hh"
 #include "kernel.hh"
 #include "lc_gen/lc_gen.h"

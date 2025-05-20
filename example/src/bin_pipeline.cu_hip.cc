@@ -11,9 +11,9 @@
 
 #include <stdexcept>
 
-#include "busyheader.hh"
-#include "context.h"
 #include "cusz.h"
+#include "cusz/context.h"
+#include "detail/busyheader.hh"
 #include "ex_utils.hh"
 #include "hf/hf.hh"
 #include "kernel.hh"

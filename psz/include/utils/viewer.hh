@@ -16,8 +16,8 @@
 #include <algorithm>
 #include <iomanip>
 
+#include "cusz/header.h"
 #include "cusz/type.h"
-#include "header.h"
 #include "mem/memseg_cxx.hh"
 #include "port.hh"
 #include "verify.hh"

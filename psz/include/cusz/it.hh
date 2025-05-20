@@ -9,7 +9,7 @@
  *
  */
 
-#include "../busyheader.hh"
+#include "../detail/busyheader.hh"
 
 template <typename T, int DIM, int BLOCK>
 struct psz_buf {

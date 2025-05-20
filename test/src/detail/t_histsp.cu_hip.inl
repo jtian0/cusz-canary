@@ -9,7 +9,7 @@
  *
  */
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "kernel/detail/histsp.cuhip.inl"
 #include "kernel/hist.hh"
 #include "kernel/histsp.hh"

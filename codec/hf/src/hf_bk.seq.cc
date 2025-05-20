@@ -1,7 +1,6 @@
-#include "hfbk.hh"
-
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
+#include "hfbk.hh"
 #include "hfbk_impl.hh"
 #include "hfcanon.hh"
 #include "utils/timer.hh"

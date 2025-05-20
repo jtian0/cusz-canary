@@ -13,8 +13,8 @@
 #ifndef E8CDEF97_5136_45C6_A6F2_3FECD549F8A4
 #define E8CDEF97_5136_45C6_A6F2_3FECD549F8A4
 
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 
 struct cpu_diagnostics {
   static std::string exec_shellcmd(const char* cmd)

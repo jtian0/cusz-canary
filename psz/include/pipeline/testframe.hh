@@ -1,11 +1,11 @@
 #ifndef D776A673_682E_40DB_BA19_2E9A516D44CC
 #define D776A673_682E_40DB_BA19_2E9A516D44CC
 
-#include "busyheader.hh"
 #include "compressor.hh"
-#include "context.h"
+#include "cusz/context.h"
+#include "cusz/header.h"
 #include "cusz/type.h"
-#include "header.h"
+#include "detail/busyheader.hh"
 #include "tehm.hh"
 
 template <typename T = f4>

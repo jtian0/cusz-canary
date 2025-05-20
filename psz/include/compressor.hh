@@ -12,10 +12,10 @@
 #ifndef C3E05282_5791_4E76_9D49_EC31A316EC29
 #define C3E05282_5791_4E76_9D49_EC31A316EC29
 
-#include "busyheader.hh"
-#include "context.h"
+#include "cusz/context.h"
+#include "cusz/header.h"
 #include "cusz/type.h"
-#include "header.h"
+#include "detail/busyheader.hh"
 #include "hf.hh"
 #include "mem.hh"
 #include "typing.hh"

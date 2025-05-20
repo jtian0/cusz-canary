@@ -11,7 +11,7 @@
 
 #include <hip/hip_runtime.h>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "mem/memseg.h"
 
 void pszmem_malloc_hip(pszmem* m)

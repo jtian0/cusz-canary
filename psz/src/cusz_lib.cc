@@ -10,11 +10,11 @@
  *
  */
 
-#include "busyheader.hh"
 #include "compressor.hh"
-#include "context.h"
 #include "cusz.h"
+#include "cusz/context.h"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 #include "hf.hh"
 #include "port.hh"
 #include "tehm.hh"

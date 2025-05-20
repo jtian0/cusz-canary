@@ -11,7 +11,7 @@
 
 #include <queue>
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "hfbk_impl.hh"
 #include "hfword.hh"
 #include "utils/timer.hh"

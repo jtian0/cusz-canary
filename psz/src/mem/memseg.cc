@@ -10,9 +10,10 @@
  */
 
 #include "mem/memseg.h"
-#include "busyheader.hh"
 
 #include <fstream>
+
+#include "detail/busyheader.hh"
 
 void pszmem__calc_len(pszmem* m)
 {

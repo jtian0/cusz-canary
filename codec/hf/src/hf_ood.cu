@@ -14,7 +14,7 @@
  *
  */
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "hf.hh"
 #include "hfbk.hh"
 #include "hfcodec.hh"

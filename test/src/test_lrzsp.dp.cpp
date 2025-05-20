@@ -1,12 +1,13 @@
 // deps
-#include <oneapi/dpl/execution>
-#include <oneapi/dpl/algorithm>
-#include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "busyheader.hh"
+#include <oneapi/dpl/algorithm>
+#include <oneapi/dpl/execution>
+#include <random>
+#include <sycl/sycl.hpp>
+
+#include "detail/busyheader.hh"
 #include "port.hh"
 #include "rand.hh"
-#include <random>
 // definitions
 #include "detail/t_lrzsp.dp.inl"
 

@@ -12,13 +12,13 @@
 #ifndef CLI_CUH
 #define CLI_CUH
 
-#include "busyheader.hh"
 #include "cusz.h"
+#include "cusz/header.h"
 #include "cusz/type.h"
-#include "header.h"
+#include "detail/busyheader.hh"
 #include "port.hh"
 //
-#include "context.h"
+#include "cusz/context.h"
 #include "dryrun.hh"
 #include "lc_gen/lc_gen.h"
 #include "mem.hh"

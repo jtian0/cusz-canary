@@ -15,13 +15,13 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "busyheader.hh"
 #include "compare/compare.cu_hip.hh"
 #include "compare/compare.dp.hh"
 #include "compare/compare.dpl.hh"
 #include "compare/compare.stl.hh"
 #include "compare/compare.thrust.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 
 namespace psz {
 

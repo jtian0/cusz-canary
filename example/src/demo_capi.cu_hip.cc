@@ -11,8 +11,8 @@
 
 #include <cuda_runtime.h>
 
-#include "context.h"
 #include "cusz.h"
+#include "cusz/context.h"
 #include "cusz/type.h"
 #include "utils/io.hh"
 #include "utils/viewer.hh"

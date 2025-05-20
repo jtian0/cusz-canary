@@ -11,8 +11,8 @@
 
 #include <algorithm>
 
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
 #include "mem/memseg.h"
 #include "mem/memseg_cxx.hh"
 #include "rand.hh"

@@ -14,9 +14,10 @@
 #ifndef CUSZ_KERNEL_CODEC_HUFFMAN_CUH
 #define CUSZ_KERNEL_CODEC_HUFFMAN_CUH
 
-#include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "busyheader.hh"
+#include <sycl/sycl.hpp>
+
+#include "detail/busyheader.hh"
 #include "hf/hfcodec.hh"
 #include "hf/hfstruct.h"
 #include "typing.hh"
@@ -71,7 +72,7 @@ template <typename E, typename H, typename M>
 void hf_decode_kernel(
     H* in, uint8_t* revbook, M* par_nbit, M* par_entry,
     int const revbook_nbyte, int const sublen, int const pardeg, E* out,
-    const sycl::nd_item<3> &item_ct1, uint8_t *dpct_local);
+    const sycl::nd_item<3>& item_ct1, uint8_t* dpct_local);
 
 namespace psz {
 namespace detail {
@@ -79,18 +80,18 @@ namespace detail {
 template <typename E, typename H>
 void hf_encode_phase1_fill(
     E* in_uncompressed, size_t const in_uncompressed_len, H* in_book,
-    int const in_booklen, H* out_encoded, const sycl::nd_item<3> &item_ct1,
-    char *__codec_huffman_uninitialized);
+    int const in_booklen, H* out_encoded, const sycl::nd_item<3>& item_ct1,
+    char* __codec_huffman_uninitialized);
 
 template <typename H, typename M>
 void hf_encode_phase2_deflate(
     H* inout_inplace, size_t const len, M* par_nbit, M* par_ncell,
-    int const sublen, int const pardeg, const sycl::nd_item<3> &item_ct1);
+    int const sublen, int const pardeg, const sycl::nd_item<3>& item_ct1);
 
 template <typename H, typename M>
 void hf_encode_phase4_concatenate(
-    H* gapped, M* par_entry, M* par_ncell, int const cfg_sublen,
-    H* non_gapped, const sycl::nd_item<3> &item_ct1);
+    H* gapped, M* par_entry, M* par_ncell, int const cfg_sublen, H* non_gapped,
+    const sycl::nd_item<3>& item_ct1);
 
 // TODO change size_t to unsigned int
 template <typename H, typename E>
@@ -155,8 +156,8 @@ void psz::detail::hf_decode_single_thread_inflate(
 template <typename E, typename H>
 void psz::detail::hf_encode_phase1_fill(
     E* in_uncompressed, size_t const in_uncompressed_len, H* in_book,
-    int const in_booklen, H* out_encoded, const sycl::nd_item<3> &item_ct1,
-    char *__codec_huffman_uninitialized)
+    int const in_booklen, H* out_encoded, const sycl::nd_item<3>& item_ct1,
+    char* __codec_huffman_uninitialized)
 {
   auto shmem_cb = reinterpret_cast<H*>(__codec_huffman_uninitialized);
 
@@ -183,7 +184,7 @@ void psz::detail::hf_encode_phase1_fill(
 template <typename H, typename M>
 void psz::detail::hf_encode_phase2_deflate(
     H* inout_inplace, size_t const len, M* par_nbit, M* par_ncell,
-    int const sublen, int const pardeg, const sycl::nd_item<3> &item_ct1)
+    int const sublen, int const pardeg, const sycl::nd_item<3>& item_ct1)
 {
   constexpr int CELL_BITWIDTH = sizeof(H) * 8;
 
@@ -245,8 +246,8 @@ void psz::detail::hf_encode_phase2_deflate(
 
 template <typename H, typename M>
 void psz::detail::hf_encode_phase4_concatenate(
-    H* gapped, M* par_entry, M* par_ncell, int const cfg_sublen,
-    H* non_gapped, const sycl::nd_item<3> &item_ct1)
+    H* gapped, M* par_entry, M* par_ncell, int const cfg_sublen, H* non_gapped,
+    const sycl::nd_item<3>& item_ct1)
 {
   auto n = par_ncell[item_ct1.get_group(2)];
   auto src = gapped + cfg_sublen * item_ct1.get_group(2);
@@ -262,7 +263,7 @@ template <typename E, typename H, typename M>
 void hf_decode_kernel(
     H* in, uint8_t* revbook, M* par_nbit, M* par_entry,
     int const revbook_nbyte, int const sublen, int const pardeg, E* out,
-    const sycl::nd_item<3> &item_ct1, uint8_t *dpct_local)
+    const sycl::nd_item<3>& item_ct1, uint8_t* dpct_local)
 {
   auto shmem = (uint8_t*)dpct_local;
   constexpr auto block_dim = HuffmanHelper::BLOCK_DIM_DEFLATE;

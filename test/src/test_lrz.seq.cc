@@ -9,7 +9,7 @@
  *
  */
 
-#include "busyheader.hh"
+#include "detail/busyheader.hh"
 #include "detail/correctness.inl"
 #include "kernel/detail/l23.seq.inl"
 

@@ -9,10 +9,9 @@
  *
  */
 
-#include "hfcanon.hh"
-
-#include "busyheader.hh"
 #include "cusz/type.h"
+#include "detail/busyheader.hh"
+#include "hfcanon.hh"
 #include "hfword.hh"
 
 template <typename E, typename H>

@@ -15,7 +15,7 @@
 
 #include "compressor.hh"
 
-#include "context.h"
+#include "cusz/context.h"
 #include "pipeline/compressor.inl"
 #include "port.hh"
 #include "tehm.hh"
