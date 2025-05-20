@@ -1,9 +1,10 @@
-#include <sycl/sycl.hpp>
 #include <dpct/dpct.hpp>
+#include <sycl/sycl.hpp>
+
 #include "cusz/type.h"
-#include "stat/compare/compare.dp.hh"
+#include "detail/port.hh"
+#include "detail/stat/compare/compare.dp.hh"
 #include "utils/err.hh"
-#include "port.hh"
 // definitions
 #include "detail/extrema.dp.inl"
 

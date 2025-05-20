@@ -15,11 +15,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "compare/compare.cu_hip.hh"
-#include "compare/compare.dp.hh"
-#include "compare/compare.dpl.hh"
-#include "compare/compare.stl.hh"
-#include "compare/compare.thrust.hh"
+#include "compare.cu_hip.hh"
+#include "compare.dp.hh"
+#include "compare.dpl.hh"
+#include "compare.stl.hh"
+#include "compare.thrust.hh"
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
 
@@ -30,7 +30,7 @@ bool identical(T* d1, T* d2, size_t const len)
 {
   if (P == SEQ)
     psz::cppstl_identical(d1, d2, len);
-  else if (P == THRUST)
+  else if (P == THRUST_DPL)
     thrustgpu_identical(d1, d2, len);
   else {
     throw runtime_error(string(__FUNCTION__) + ": backend not supported.");
@@ -41,14 +41,14 @@ template <pszpolicy P, typename T>
 void probe_extrema(T* in, size_t len, T res[4])
 {
   if (P == SEQ) psz::cppstl_extrema(in, len, res);
-#ifdef REACTIVATE_THRUSTGPU
-  else if (P == THRUST)
+#ifdef REACTIVATE_THRUST_DPLGPU
+  else if (P == THRUST_DPL)
     thrustgpu::thrustgpu_get_extrema_rawptr(in, len, res);
 #endif
-  else if (P == CUDA or P == HIP) {
+  else if (P == CUDA or P == ROCM) {
     psz::cu_hip::extrema(in, len, res);
   }
-  else if (P == ONEAPI) {
+  else if (P == SYCL) {
     psz::dpcpp::extrema(in, len, res);
   }
   else
@@ -63,8 +63,8 @@ bool error_bounded(
   bool eb_ed = true;
   if (P == SEQ)
     eb_ed = psz::cppstl_error_bounded(a, b, len, eb, first_faulty_idx);
-#ifdef REACTIVATE_THRUSTGPU
-  else if (P == THRUST)
+#ifdef REACTIVATE_THRUST_DPLGPU
+  else if (P == THRUST_DPL)
     eb_ed = psz::thrustgpu::thrustgpu_error_bounded(
         a, b, len, eb, first_faulty_idx);
 #endif
@@ -76,12 +76,12 @@ bool error_bounded(
 template <pszpolicy P, typename T>
 void assess_quality(pszsummary* s, T* xdata, T* odata, size_t const len)
 {
-  // [TODO] THRUST is not activated in the frontend
+  // [TODO] THRUST_DPL is not activated in the frontend
   if (P == SEQ)
     psz::cppstl_assess_quality(s, xdata, odata, len);
-  else if (P == THRUST)
+  else if (P == THRUST_DPL)
     psz::thrustgpu_assess_quality(s, xdata, odata, len);
-  else if (P == ONEAPI) {
+  else if (P == SYCL) {
 #if defined(PSZ_USE_1API)
     if constexpr (std::is_same_v<T, f4>) {
       psz::dpl_assess_quality(s, xdata, odata, len);

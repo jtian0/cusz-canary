@@ -1,5 +1,5 @@
+#include "detail/compare.thrust.hh"
 #include "detail/compare.thrust.inl"
-#include "stat/compare/compare.thrust.hh"
 
 #define THRUSTGPU_ASSESS(Tliteral, T)             \
   template void psz::thrustgpu_assess_quality<T>( \

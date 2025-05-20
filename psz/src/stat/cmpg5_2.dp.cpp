@@ -2,8 +2,8 @@
 #include <oneapi/dpl/algorithm>
 #include <oneapi/dpl/execution>
 
-#include "port.hh"
-#include "stat/compare/compare.dpl.hh"
+#include "detail/port.hh"
+#include "detail/stat/compare/compare.dpl.hh"
 // definitions
 #include "detail/maxerr.dpl.inl"
 

@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 #include "cusz/type.h"
-#include "port.hh"
+#include "detail/port.hh"
 
 namespace psz::experimental {
 

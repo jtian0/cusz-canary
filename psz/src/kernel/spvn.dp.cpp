@@ -2,8 +2,8 @@
 
 #include "criteria.gpu.hh"
 #include "cusz/type.h"
+#include "detail/port.hh"
 #include "kernel/spv.hh"
-#include "port.hh"
 #include "utils/err.hh"
 #include "utils/timer.hh"
 

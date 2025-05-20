@@ -18,14 +18,14 @@
 #include <oneapi/dpl/execution>
 #include <sycl/sycl.hpp>
 
-#include "stat/compare/compare.dpl.hh"
+#include "detail/stat/compare/compare.dpl.hh"
 
 // #include <thrust/count.h>
 // #include <thrust/iterator/constant_iterator.h>
 #include <cmath>
 
 #include "cusz/type.h"
-#include "stat/compare.hh"
+#include "detail/compare.hh"
 
 namespace psz {
 

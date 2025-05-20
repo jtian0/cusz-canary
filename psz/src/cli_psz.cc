@@ -1,5 +1,5 @@
+#include "detail/port.hh"
 #include "pipeline/cli.inl"
-#include "port.hh"
 #include "utils/query.hh"
 
 int main(int argc, char** argv)
@@ -11,7 +11,7 @@ int main(int argc, char** argv)
     CPU_QUERY;
     GPU_QUERY;
   }
-  
+
   cusz::CLI<float> cusz_cli;
   cusz_cli.dispatch(ctx);
 

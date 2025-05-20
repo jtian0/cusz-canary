@@ -11,8 +11,7 @@
 
 #include "log/sanitize.hh"
 
-#include "cusz/context.h"
-#include "detail/busyheader.hh"
+#include "context.h"
 #include "hfword.hh"
 
 // resemble the one defined in dbg_cu.inl
@@ -28,7 +27,7 @@ template <typename T, typename E, typename H>
 void psz::sanitize<T, E, H>::sanitize_pszctx(
     pszctx const* const ctx, std::string LOC)
 {
-  __PSZSANITIZE_VAR(LOC.c_str(), ctx->radius)
+  __PSZSANITIZE_VAR(LOC.c_str(), ctx->header->radius)
   __PSZSANITIZE_VAR(LOC.c_str(), ctx->dict_size)
 }
 
@@ -59,7 +58,7 @@ template <typename T, typename E, typename H>
 void psz::sanitize<T, E, H>::sanitize_hist_book(
     M const* h_hist, H const* h_bk, szt bklen)
 {
-  using PW = PackedWordByWidth<sizeof(H)>;
+  using PW = HuffmanWord<sizeof(H)>;
 
   cout << "[psz::dbg::(hist,bk)] printing non-zero frequencies" << endl;
   for (auto i = 0; i < bklen; i++) {
@@ -72,8 +71,8 @@ void psz::sanitize<T, E, H>::sanitize_hist_book(
           "idx=%4d\tfreq=%u\t",
           i, freq);
     cout << "packed(bits,word)\t"
-         << std::bitset<PW::FIELDWIDTH_bits>(packed_word->bits) << "  ";
-    cout << std::bitset<PW::FIELDWIDTH_bits>(packed_word->word) << endl;
+         << std::bitset<PW::FIELD_BITCOUNT>(packed_word->bitcount) << "  ";
+    cout << std::bitset<PW::FIELD_BITCOUNT>(packed_word->prefix_code) << endl;
   }
 }
 

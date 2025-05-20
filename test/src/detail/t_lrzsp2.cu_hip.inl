@@ -20,11 +20,11 @@
 #include "../rand.hh"
 #include "cusz/nd.h"
 #include "cusz/type.h"
+#include "detail/compare.stl.hh"
+#include "detail/compare.thrust.hh"
 #include "kernel/lrz.hh"
 #include "kernel/spv.hh"
 #include "mem.hh"
-#include "stat/compare/compare.stl.hh"
-#include "stat/compare/compare.thrust.hh"
 #include "utils/print_arr.hh"
 #include "utils/viewer.hh"
 
@@ -73,17 +73,17 @@ bool run_seq(MEMPOOL_SEQ* mem, double const eb, int const radius)
 
 template <typename T = f4, typename E = u4, bool LENIENT = true>
 bool run_gpu(
-    MEMPOOL_GPU* mem, double const eb, int const radius, GpuStreamT stream)
+    MEMPOOL_GPU* mem, double const eb, int const radius, cudaStream_t stream)
 {
   float time;
 
   psz_comp_l23r<T, E, false>(
       mem->od->dptr(), mem->od->template len3<dim3>(), eb, radius,
       mem->ectrl(), mem->compact, &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   mem->compact->make_host_accessible(stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   psz::spv_scatter_naive<PROPER_GPU_BACKEND, T, u4>(
       mem->compact_val(), mem->compact_idx(), mem->compact->num_outliers(),
@@ -91,12 +91,12 @@ bool run_gpu(
   psz::spv_scatter_naive<PROPER_GPU_BACKEND, T, u4>(
       mem->compact_val(), mem->compact_idx(), mem->compact->num_outliers(),
       mem->xdtest->dptr(), &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   psz_decomp_l23<T, E>(
       mem->ectrl(), mem->e->template len3<dim3>(), mem->xd->dptr(), eb, radius,
       mem->xd->dptr(), &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   size_t first_non_eb = 0;
   bool error_bounded = psz::error_bounded<SEQ, T>(
@@ -111,8 +111,8 @@ bool testcase(szt x, szt y, szt z, double const eb, int const radius = 512)
 {
   using H = u4;
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   auto mem_gpu = new MEMPOOL_GPU(x, radius, y, z);
   mem_gpu->od->control({Malloc, MallocHost});

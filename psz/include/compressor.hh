@@ -16,9 +16,9 @@
 #include "cusz/header.h"
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "hf.hh"
+#include "detail/typing.hh"
+#include "hf_hl.hh"
 #include "mem.hh"
-#include "typing.hh"
 
 namespace cusz {
 

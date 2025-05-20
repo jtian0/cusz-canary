@@ -12,7 +12,7 @@
 #ifndef C6875E14_650F_49ED_9DD5_E7F916EE31FF
 #define C6875E14_650F_49ED_9DD5_E7F916EE31FF
 
-#include "stat/compare/compare.thrust.hh"
+#include "detail/compare.thrust.hh"
 
 // #include <thrust/count.h>
 // #include <thrust/iterator/constant_iterator.h>
@@ -40,7 +40,7 @@ void thrustgpu_get_maxerr(
     diff = original;  // aliasing
   }
   else {
-    GpuMalloc(&diff, sizeof(T) * len);
+    cudaMalloc(&diff, sizeof(T) * len);
   }
 
   auto expr = [=] __device__(T rel, T oel) { return rel - oel; };
@@ -56,7 +56,7 @@ void thrustgpu_get_maxerr(
   maximum_val = *maximum_ptr;
   maximum_loc = maximum_ptr - d;
 
-  if (not destructive) { GpuFree(diff); }
+  if (not destructive) { cudaFree(diff); }
 }
 
 }  // namespace psz

@@ -14,8 +14,8 @@
 #include <type_traits>
 
 #include "cusz/suint.hh"
+#include "detail/port.hh"
 #include "mem/compact.hh"
-#include "port.hh"
 
 namespace psz {
 namespace cu_hip {

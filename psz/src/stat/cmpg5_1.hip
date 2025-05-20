@@ -1,6 +1,6 @@
 // deps
-#include "stat/compare.thrust.hh"
-#include "port.hh"
+#include "detail/stat/compare.thrust.hh"
+#include "detail/port.hh"
 // definitions
 #include "detail/maxerr_thrust.inl"
 

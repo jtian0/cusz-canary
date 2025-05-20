@@ -18,8 +18,8 @@
 
 #include "cusz/header.h"
 #include "cusz/type.h"
+#include "detail/port.hh"
 #include "mem/memseg_cxx.hh"
-#include "port.hh"
 #include "verify.hh"
 
 // deps

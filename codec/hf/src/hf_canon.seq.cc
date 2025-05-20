@@ -10,9 +10,7 @@
  */
 
 #include "cusz/type.h"
-#include "detail/busyheader.hh"
-#include "hfcanon.hh"
-#include "hfword.hh"
+#include "hf_impl.hh"
 
 template <typename E, typename H>
 int canonize(u1* bin, uint32_t const bklen)
@@ -26,25 +24,25 @@ int canonize(u1* bin, uint32_t const bklen)
   auto seg1 = sizeof(H) * (3 * bklen);
   auto seg2 = sizeof(u4) * (4 * TYPE_BITS);
 
-  H* icb = (H*)bin;
-  H* ocb = icb + bklen;
-  H* canon = icb + bklen * 2;
+  H* input_bk = (H*)bin;
+  H* output_bk = input_bk + bklen;
+  H* canon = input_bk + bklen * 2;
   auto numl = (u4*)(bin + seg1);
   auto iterby = numl + TYPE_BITS;
   auto first = numl + TYPE_BITS * 2;
   auto entry = numl + TYPE_BITS * 3;
   auto keys = (E*)(bin + seg1 + seg2);
 
-  using PW = PackedWordByWidth<sizeof(H)>;
+  using PW = HuffmanWord<sizeof(H)>;
 
   constexpr auto FILL = ~((H)0x0);
 
   // states
   int max_l = 0;
 
-  for (auto c = icb; c < icb + bklen; c++) {
+  for (auto c = input_bk; c < input_bk + bklen; c++) {
     auto pw = (PW*)c;
-    int l = pw->bits;
+    int l = pw->bitcount;
 
     if (*c != FILL) {
       max_l = l > max_l ? l : max_l;
@@ -68,24 +66,24 @@ int canonize(u1* bin, uint32_t const bklen)
   //   printf("l: %3d\tnuml: %3d\tfirst: %3d\n", l, numl[l], first[l]);
 
   for (auto i = 0; i < bklen; i++) canon[i] = FILL;
-  for (auto i = 0; i < bklen; i++) ocb[i] = FILL;
+  for (auto i = 0; i < bklen; i++) output_bk[i] = FILL;
 
   // Reverse Codebook Generation
   for (auto i = 0; i < bklen; i++) {
-    auto c = icb[i];
-    uint8_t l = reinterpret_cast<PW*>(&c)->bits;
+    auto c = input_bk[i];
+    uint8_t l = reinterpret_cast<PW*>(&c)->bitcount;
 
     if (c != FILL) {
       canon[iterby[l]] = static_cast<H>(first[l] + iterby[l] - entry[l]);
       keys[iterby[l]] = i;
 
-      reinterpret_cast<PW*>(&(canon[iterby[l]]))->bits = l;
+      reinterpret_cast<PW*>(&(canon[iterby[l]]))->bitcount = l;
       iterby[l]++;
     }
   }
 
   for (auto i = 0; i < bklen; i++)
-    if (canon[i] != FILL) ocb[keys[i]] = canon[i];
+    if (canon[i] != FILL) output_bk[keys[i]] = canon[i];
 
   return 0;
 }
@@ -107,16 +105,16 @@ template <typename E, typename H>
 int hf_canon_reference<E, H>::canonize()
 {
   using Space = hf_canon_reference<E, H>;
-  using PW = PackedWordByWidth<sizeof(H)>;
+  using PW = HuffmanWord<sizeof(H)>;
 
   constexpr auto FILL = ~((H)0x0);
 
   // states
   int max_l = 0;
 
-  for (auto c = icb(); c < icb() + booklen; c++) {
+  for (auto c = input_bk(); c < input_bk() + booklen; c++) {
     auto pw = (PW*)c;
-    int l = pw->bits;
+    int l = pw->bitcount;
 
     if (*c != FILL) {
       max_l = l > max_l ? l : max_l;
@@ -140,24 +138,24 @@ int hf_canon_reference<E, H>::canonize()
   //   printf("l: %3d\tnuml: %3d\tfirst: %3d\n", l, numl(l), first(l));
 
   for (auto i = 0; i < booklen; i++) canon(i) = ~((H)0x0);
-  for (auto i = 0; i < booklen; i++) ocb(i) = ~((H)0x0);
+  for (auto i = 0; i < booklen; i++) output_bk(i) = ~((H)0x0);
 
   // Reverse Codebook Generation
   for (auto i = 0; i < booklen; i++) {
-    auto c = icb(i);
-    uint8_t l = reinterpret_cast<PW*>(&c)->bits;
+    auto c = input_bk(i);
+    uint8_t l = reinterpret_cast<PW*>(&c)->bitcount;
 
     if (c != FILL) {
       canon(iterby(l)) = static_cast<H>(first(l) + iterby(l) - entry(l));
       keys(iterby(l)) = i;
 
-      reinterpret_cast<PW*>(&(canon(iterby(l))))->bits = l;
+      reinterpret_cast<PW*>(&(canon(iterby(l))))->bitcount = l;
       iterby(l)++;
     }
   }
 
   for (auto i = 0; i < booklen; i++)
-    if (canon(i) != FILL) ocb(keys(i)) = canon(i);
+    if (canon(i) != FILL) output_bk(keys(i)) = canon(i);
 
   return 0;
 }

@@ -14,7 +14,7 @@
 
 #include <thrust/device_ptr.h>
 
-#include "stat/compare/compare.thrust.hh"
+#include "detail/compare.thrust.hh"
 // #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h>
 

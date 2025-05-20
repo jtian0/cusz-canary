@@ -13,10 +13,10 @@
 
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
+#include "detail/compare.hh"
 #include "mem/memseg.h"
 #include "mem/memseg_cxx.hh"
 #include "rand.hh"
-#include "stat/compare.hh"
 
 void f(szt len, u4 seed)
 {

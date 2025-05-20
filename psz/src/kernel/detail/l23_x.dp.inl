@@ -13,7 +13,7 @@
 #include <sycl/sycl.hpp>
 
 #include "cusz/suint.hh"
-#include "port.hh"
+#include "detail/port.hh"
 #include "wave32.dp.inl"
 
 namespace psz {

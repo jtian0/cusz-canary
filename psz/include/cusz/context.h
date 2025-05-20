@@ -44,7 +44,7 @@ struct psz_context {
   bool report_cr_est{false};
   bool verbose{false};
 
-  pszdevice device;
+  //   pszdevice device;
 
   // TODO: (need fix) if no default is specified, empty 0 -> lorenzo
   psz_predtype pred_type{Spline};

@@ -2,7 +2,7 @@
 #define AE6DCA2E_F19B_41DB_80CB_11230E548F92
 
 #include "detail/busyheader.hh"
-#include "port.hh"
+#include "detail/port.hh"
 
 #if defined(PSZ_USE_CUDA)
 

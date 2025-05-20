@@ -1,24 +1,10 @@
-// deps
-#include "port.hh"
-// definitions
-#include "hfcodec_drv.cuhip.inl"
+// TODO put u? in hf path
+#include "hf_kernels.cuhip.inl"
 
-#define HF_CODEC_INIT(E, H, M)                                             \
-  template void psz::hf_encode_coarse_rev2<E, H, M>(                       \
-      E*, size_t const, hf_book*, hf_bitstream*, size_t*, size_t*, float*, \
-      void*);                                                              \
-                                                                           \
-  template void psz::hf_decode_coarse<E, H, M>(                            \
-      H*, uint8_t*, int const, M*, M*, int const, int const, E*, float*,   \
-      void*);
+namespace phf::cuhip {
 
-HF_CODEC_INIT(u1, u4, u4);
-HF_CODEC_INIT(u2, u4, u4);
-HF_CODEC_INIT(u4, u4, u4);
+template class modules<u1, u4>;
+template class modules<u2, u4>;
+template class modules<u4, u4>;
 
-HF_CODEC_INIT(u1, ull, u4);
-HF_CODEC_INIT(u2, ull, u4);
-HF_CODEC_INIT(u4, ull, u4);
-
-#undef HFBOOK_INIT
-#undef HF_CODEC_INIT
+}  // namespace phf::cuhip

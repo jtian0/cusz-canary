@@ -10,8 +10,8 @@
  */
 
 // deps
-#include "port.hh"
 #include "cusz/type.h"
+#include "detail/port.hh"
 // definitions
 #include "ex_utils_g.inl"
 

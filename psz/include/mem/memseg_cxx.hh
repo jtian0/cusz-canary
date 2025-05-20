@@ -17,10 +17,10 @@
 
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
+#include "detail/compare.hh"
+#include "detail/typing.hh"
 #include "memseg.h"
 #include "memseg_cxx/definition.hh"
-#include "stat/compare.hh"
-#include "typing.hh"
 
 #if defined(PSZ_USE_CUDA)
 #include "memseg_cxx/memseg_cxx.cu.hh"

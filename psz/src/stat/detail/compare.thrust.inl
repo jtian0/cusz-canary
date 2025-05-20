@@ -12,7 +12,7 @@
 #ifndef F7DF2FE5_571E_48C1_965D_0B19D1CC14D4
 #define F7DF2FE5_571E_48C1_965D_0B19D1CC14D4
 
-#include "stat/compare/compare.thrust.hh"
+#include "detail/compare.thrust.hh"
 
 // #include <thrust/count.h>
 // #include <thrust/iterator/constant_iterator.h>
@@ -22,7 +22,7 @@
 #include <thrust/tuple.h>
 
 #include "cusz/type.h"
-#include "stat/compare.hh"
+#include "detail/compare.hh"
 
 namespace psz {
 

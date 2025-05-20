@@ -22,12 +22,12 @@ struct psz_gpu_exception : public std::exception {
 };
 
 static void psz_check_gpu_error_impl(
-    GpuErrorT status, const char* file, int line)
+    cudaError_t status, const char* file, int line)
 {
   /*
   DPCT1000:1: Error handling if-stmt was detected but could not be rewritten.
   */
-  if (GpuSuccess != status) {
+  if (cudaSuccess != status) {
     /*
     DPCT1001:0: The statement could not be removed.
     */

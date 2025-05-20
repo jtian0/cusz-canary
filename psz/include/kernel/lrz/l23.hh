@@ -15,8 +15,8 @@
 #include <stdint.h>
 
 #include "cusz/type.h"
+#include "detail/port.hh"
 #include "mem/compact.hh"
-#include "port.hh"
 
 template <typename T, typename EQ = int32_t, typename FP = T>
 pszerror psz_comp_l23(

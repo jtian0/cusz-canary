@@ -16,7 +16,7 @@
 
 #include "cusz/suint.hh"
 #include "cusz/type.h"
-#include "port.hh"
+#include "detail/port.hh"
 
 template <typename T, typename Eq = uint32_t, bool ZigZag = false>
 pszerror psz_comp_l23r(

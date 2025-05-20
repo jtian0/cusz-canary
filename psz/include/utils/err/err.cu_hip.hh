@@ -14,10 +14,10 @@ struct psz_gpu_exception : public std::exception {
 };
 
 static void psz_check_gpu_error_impl(
-    GpuErrorT status, const char* file, int line)
+    cudaError_t status, const char* file, int line)
 {
-  if (GpuSuccess != status) {
-    throw psz_gpu_exception(GpuGetErrorString(status), status, file, line);
+  if (cudaSuccess != status) {
+    throw psz_gpu_exception(cudaGetErrorString(status), status, file, line);
   }
 }
 

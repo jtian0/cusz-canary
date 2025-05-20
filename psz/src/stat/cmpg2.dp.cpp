@@ -6,7 +6,7 @@
 
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "stat/compare/compare.dpl.hh"
+#include "detail/stat/compare/compare.dpl.hh"
 
 bool psz::dpl_identical(void* d1, void* d2, size_t sizeof_T, size_t const len)
 {

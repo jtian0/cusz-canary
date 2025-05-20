@@ -10,7 +10,7 @@
  */
 
 #include "cusz/suint.hh"
-#include "port.hh"
+#include "detail/port.hh"
 #include "subr.cuhip.inl"
 
 namespace psz {

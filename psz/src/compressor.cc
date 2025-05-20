@@ -16,8 +16,8 @@
 #include "compressor.hh"
 
 #include "cusz/context.h"
+#include "detail/port.hh"
 #include "pipeline/compressor.inl"
-#include "port.hh"
 #include "tehm.hh"
 #include "utils/config.hh"
 
@@ -29,9 +29,9 @@ int CompressorHelper::autotune_coarse_parhf(psz_context* ctx)
 {
   auto tune_coarse_huffman_sublen = [](size_t len) {
     int current_dev = 0;
-    GpuSetDevice(current_dev);
-    GpuDeviceProp dev_prop{};
-    GpuGetDeviceProperties(&dev_prop, current_dev);
+    cudaSetDevice(current_dev);
+    cudaDeviceProp dev_prop{};
+    cudaGetDeviceProperties(&dev_prop, current_dev);
 
     auto nSM = dev_prop.multiProcessorCount;
     auto allowed_block_dim = dev_prop.maxThreadsPerBlock;

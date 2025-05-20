@@ -1,1 +1,1 @@
-#include "stat/compare.hh"
+#include "detail/compare.hh"

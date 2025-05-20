@@ -16,9 +16,9 @@
 
 #include <type_traits>
 
+#include "detail/port.hh"
 #include "kernel/lrz.hh"
 #include "mem/compact.hh"
-#include "port.hh"
 
 #define SETUP_ZIGZAG                                                         \
   using EqUint = typename psz::typing::UInt<sizeof(Eq)>::T;                  \

@@ -18,13 +18,13 @@
 #include <sycl/sycl.hpp>
 #include <typeinfo>
 
+#include "detail/compare.thrust.hh"
+#include "detail/stat/compare/compare.stl.hh"
 #include "kernel/criteria.gpu.hh"
 #include "kernel/lrz.hh"
 #include "kernel/spv.hh"
 #include "mem/compact.hh"
 #include "mem/memseg_cxx.hh"
-#include "stat/compare/compare.stl.hh"
-#include "stat/compare/compare.thrust.hh"
 #include "utils/print_arr.hh"
 #include "utils/viewer.hh"
 

@@ -95,7 +95,7 @@ void hfbook_gpu(string fname, int bklen)
       ->file(fname.c_str(), FromFile)
       ->control({H2D});
 
-  cusz::HuffmanCodec<u4, u4> codec;
+  phf::HuffmanCodec<u4, u4> codec;
 
   auto fakelen1 = bklen * 100;
   auto fakelen2 = 768;

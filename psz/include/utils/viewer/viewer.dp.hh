@@ -1,7 +1,7 @@
 #ifndef A3EF2E2E_2F32_4922_B1CB_88B84E6F9DD4
 #define A3EF2E2E_2F32_4922_B1CB_88B84E6F9DD4
 
-#include "stat/compare/compare.dpl.hh"
+#include "detail/stat/compare/compare.dpl.hh"
 
 namespace psz {
 

@@ -110,12 +110,12 @@ int spline_construct(
           PROFILE_BLOCK_SIZE_Z, PROFILE_NUM_BLOCK_X, PROFILE_NUM_BLOCK_Y,
           PROFILE_NUM_BLOCK_Z, DEFAULT_BLOCK_SIZE>  //
           <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-             (GpuStreamT)stream>>>(
+             (cudaStream_t)stream>>>(
               data->dptr(), data->template len3<dim3>(),
               data->template st3<dim3>(),  //
               profiling_errors->dptr());
       STOP_GPUEVENT_RECORDING(stream);
-      CHECK_GPU(GpuStreamSync(stream));
+      CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
       TIME_ELAPSED_GPUEVENT(&att_time);
       DESTROY_GPUEVENT_PAIR;
       // profiling_errors->control({D2H});
@@ -137,11 +137,11 @@ int spline_construct(
             T*, SPLINE_DIM_3, PROFILE_NUM_BLOCK_X, PROFILE_NUM_BLOCK_Y,
             PROFILE_NUM_BLOCK_Z, DEFAULT_BLOCK_SIZE>  //
             <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-               (GpuStreamT)stream>>>(
+               (cudaStream_t)stream>>>(
                 data->dptr(), data->template len3<dim3>(),
                 data->template st3<dim3>(), profiling_errors->dptr());
         STOP_GPUEVENT_RECORDING(stream);
-        CHECK_GPU(GpuStreamSync(stream));
+        CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
         TIME_ELAPSED_GPUEVENT(&att_time);
         DESTROY_GPUEVENT_PAIR;
         CHECK_GPU(cudaMemcpy(
@@ -167,11 +167,11 @@ int spline_construct(
             T*, SPLINE_DIM_2, PROFILE_NUM_BLOCK_X, PROFILE_NUM_BLOCK_Y, 1,
             DEFAULT_BLOCK_SIZE>  //
             <<<auto_tuning_grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-               (GpuStreamT)stream>>>(
+               (cudaStream_t)stream>>>(
                 data->dptr(), data->template len3<dim3>(),
                 data->template st3<dim3>(), profiling_errors->dptr());
         STOP_GPUEVENT_RECORDING(stream);
-        CHECK_GPU(GpuStreamSync(stream));
+        CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
         TIME_ELAPSED_GPUEVENT(&att_time);
         DESTROY_GPUEVENT_PAIR;
         CHECK_GPU(cudaMemcpy(
@@ -200,7 +200,7 @@ int spline_construct(
 
       cusz::reset_errors<<<
           dim3(1, 1, 1), dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-          (GpuStreamT)stream>>>(profiling_errors->dptr());
+          (cudaStream_t)stream>>>(profiling_errors->dptr());
 
       auto calc_start_size = [&](auto dim, auto& s_start, auto& s_size,
                                  auto BLOCKSIZE) {
@@ -242,7 +242,7 @@ int spline_construct(
             T*, float, 4, SPLINE_DIM_3, BLOCK16, BLOCK16, BLOCK16, 1, 1, 1,
             DEFAULT_BLOCK_SIZE>
             <<<dim3(s_size_x * s_size_y * s_size_z, 9, 1),
-               dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+               dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (cudaStream_t)stream>>>(
                 data->dptr(), data->template len3<dim3>(),
                 data->template st3<dim3>(),
                 dim3(s_start_x, s_start_y, s_start_z),
@@ -251,7 +251,7 @@ int spline_construct(
                 profiling_errors->dptr(), true);
 
         STOP_GPUEVENT_RECORDING(stream);
-        CHECK_GPU(GpuStreamSync(stream));
+        CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
         TIME_ELAPSED_GPUEVENT(&temp_time);
         DESTROY_GPUEVENT_PAIR;
         att_time += temp_time;
@@ -337,7 +337,7 @@ int spline_construct(
             AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY,
             numAnchorBlockZ, DEFAULT_BLOCK_SIZE>
             <<<dim3(s_size_x * s_size_y * s_size_z, 11, 1),
-               dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+               dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (cudaStream_t)stream>>>(
                 data->dptr(), data->template len3<dim3>(),
                 data->template st3<dim3>(),
                 dim3(s_start_x, s_start_y, s_start_z),
@@ -346,7 +346,7 @@ int spline_construct(
                 profiling_errors->dptr(), true);
 
         STOP_GPUEVENT_RECORDING(stream);
-        CHECK_GPU(GpuStreamSync(stream));
+        CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
         TIME_ELAPSED_GPUEVENT(&temp_time);
         DESTROY_GPUEVENT_PAIR;
         att_time += temp_time;
@@ -459,7 +459,7 @@ int spline_construct(
       if (intp_param.auto_tuning == 4) {
         cusz::reset_errors<<<
             dim3(1, 1, 1), dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-            (GpuStreamT)stream>>>(profiling_errors->dptr());
+            (cudaStream_t)stream>>>(profiling_errors->dptr());
 
         float temp_time = 0;
         CREATE_GPUEVENT_PAIR;
@@ -470,7 +470,7 @@ int spline_construct(
               T*, float, 4, SPLINE_DIM_3, BLOCK16, BLOCK16, BLOCK16, 1, 1, 1,
               DEFAULT_BLOCK_SIZE>
               <<<dim3(s_size_x * s_size_y * s_size_z, 11, 1),
-                 dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+                 dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (cudaStream_t)stream>>>(
                   data->dptr(), data->template len3<dim3>(),
                   data->template st3<dim3>(),
                   dim3(s_start_x, s_start_y, s_start_z),
@@ -483,7 +483,7 @@ int spline_construct(
               AnchorBlockSizeY, AnchorBlockSizeZ, numAnchorBlockX,
               numAnchorBlockY, numAnchorBlockZ, DEFAULT_BLOCK_SIZE>
               <<<dim3(s_size_x * s_size_y * s_size_z, 11, 1),
-                 dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+                 dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (cudaStream_t)stream>>>(
                   data->dptr(), data->template len3<dim3>(),
                   data->template st3<dim3>(),
                   dim3(s_start_x, s_start_y, s_start_z),
@@ -492,7 +492,7 @@ int spline_construct(
                   profiling_errors->dptr(), false);
 
         STOP_GPUEVENT_RECORDING(stream);
-        CHECK_GPU(GpuStreamSync(stream));
+        CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
         TIME_ELAPSED_GPUEVENT(&temp_time);
         DESTROY_GPUEVENT_PAIR;
         att_time += temp_time;
@@ -571,7 +571,8 @@ int spline_construct(
         T*, E*, float, LEVEL, SPLINE_DIM_2, AnchorBlockSizeX, AnchorBlockSizeY,
         AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
         DEFAULT_BLOCK_SIZE>  //
-        <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+        <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
+           (cudaStream_t)stream>>>(
             data->dptr(), data->template len3<dim3>(),
             data->template st3<dim3>(),  //
             ectrl->dptr(), ectrl->template len3<dim3>(),
@@ -586,7 +587,8 @@ int spline_construct(
     cusz::c_spline_infprecis_data<
         T*, E*, float, 4, SPLINE_DIM_3, BLOCK16, BLOCK16, BLOCK16, 1, 1, 1,
         DEFAULT_BLOCK_SIZE>  //
-        <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (GpuStreamT)stream>>>(
+        <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
+           (cudaStream_t)stream>>>(
             data->dptr(), data->template len3<dim3>(),
             data->template st3<dim3>(),  //
             ectrl->dptr(), ectrl->template len3<dim3>(),
@@ -596,7 +598,7 @@ int spline_construct(
             intp_param);  //,profiling_errors->dptr());
   }
   STOP_GPUEVENT_RECORDING(stream);
-  CHECK_GPU(GpuStreamSync(stream));
+  CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
   TIME_ELAPSED_GPUEVENT(time);
   DESTROY_GPUEVENT_PAIR;
 
@@ -631,7 +633,7 @@ int spline_reconstruct(
         AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
         DEFAULT_BLOCK_SIZE>  //
         <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-           (GpuStreamT)stream>>>  //
+           (cudaStream_t)stream>>>  //
         (ectrl->dptr(), ectrl->template len3<dim3>(),
          ectrl->template st3<dim3>(),  //
          anchor->dptr(), anchor->template len3<dim3>(),
@@ -648,7 +650,7 @@ int spline_reconstruct(
         E*, T*, FP, 4, SPLINE_DIM_3, BLOCK16, BLOCK16, BLOCK16, 1, 1, 1,
         DEFAULT_BLOCK_SIZE>  //
         <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
-           (GpuStreamT)stream>>>  //
+           (cudaStream_t)stream>>>  //
         (ectrl->dptr(), ectrl->template len3<dim3>(),
          ectrl->template st3<dim3>(),  //
          anchor->dptr(), anchor->template len3<dim3>(),
@@ -658,7 +660,7 @@ int spline_reconstruct(
          outlier_tmp, eb_r, ebx2, radius, intp_param);
   }
   STOP_GPUEVENT_RECORDING(stream);
-  CHECK_GPU(GpuStreamSync(stream));
+  CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
   TIME_ELAPSED_GPUEVENT(time);
   DESTROY_GPUEVENT_PAIR;
 

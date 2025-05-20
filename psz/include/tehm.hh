@@ -15,7 +15,7 @@
 
 #include "compressor.hh"
 #include "cusz/type.h"
-#include "hf.hh"
+#include "hf_hl.hh"
 
 namespace psz {
 
@@ -47,7 +47,7 @@ struct TEHM {
   using M = MetadataTrait<4>::type;
 
   /* Lossless Codec*/
-  using Codec = cusz::HuffmanCodec<E, M>;
+  using Codec = phf::HuffmanCodec<E>;
 };
 
 using CompressorF4 = cusz::Compressor<cusz::TEHM<f4>>;

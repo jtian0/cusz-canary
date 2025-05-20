@@ -3,7 +3,7 @@
 
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "port.hh"
+#include "detail/port.hh"
 //
 #include "query/query_cpu.hh"
 #define CPU_QUERY cpu_diagnostics::get_cpu_properties();

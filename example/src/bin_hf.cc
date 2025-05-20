@@ -11,11 +11,11 @@
 
 #include <string>
 
+#include "detail/port.hh"
 #include "hf/hf.hh"
 #include "kernel/hist.hh"
 #include "mem.hh"
 #include "stat.hh"
-#include "port.hh"
 #include "utils/print_arr.hh"
 #include "utils/viewer.hh"
 
@@ -24,7 +24,8 @@ using F = u4;
 
 namespace {
 
-szt tune_coarse_huffman_sublen(szt len) {
+szt tune_coarse_huffman_sublen(szt len)
+{
   int current_dev = 0;
   GpuSetDevice(current_dev);
   GpuDeviceProp dev_prop{};
@@ -34,30 +35,35 @@ szt tune_coarse_huffman_sublen(szt len) {
 
   auto nSM = dev_prop.multiProcessorCount;
   auto allowed_block_dim = dev_prop.maxThreadsPerBlock;
-  auto deflate_nthread = allowed_block_dim * nSM / HuffmanHelper::DEFLATE_CONSTANT;
+  auto deflate_nthread =
+      allowed_block_dim * nSM / HuffmanHelper::DEFLATE_CONSTANT;
   auto optimal_sublen = psz_utils::get_npart(len, deflate_nthread);
-  optimal_sublen = psz_utils::get_npart(optimal_sublen, HuffmanHelper::BLOCK_DIM_DEFLATE) * HuffmanHelper::BLOCK_DIM_DEFLATE;
+  optimal_sublen =
+      psz_utils::get_npart(optimal_sublen, HuffmanHelper::BLOCK_DIM_DEFLATE) *
+      HuffmanHelper::BLOCK_DIM_DEFLATE;
 
   return optimal_sublen;
 }
 
-void print_tobediscarded_info(float time_in_ms, string fn_name) {
+void print_tobediscarded_info(float time_in_ms, string fn_name)
+{
   auto title = "[psz::info::discard::" + fn_name + "]";
   printf("%s time (ms): %.6f\n", title.c_str(), time_in_ms);
 }
 
 template <typename T>
-float print_GBps(szt len, float time_in_ms, string fn_name) {
+float print_GBps(szt len, float time_in_ms, string fn_name)
+{
   auto B_to_GiB = 1.0 * 1024 * 1024 * 1024;
   auto GiBps = len * sizeof(T) * 1.0 / B_to_GiB / (time_in_ms / 1000);
   auto title = "[psz::info::res::" + fn_name + "]";
-  printf("%s shortest time (ms): %.6f\thighest throughput (GiB/s): %.2f\n", 
-    title.c_str(), time_in_ms, GiBps);
+  printf(
+      "%s shortest time (ms): %.6f\thighest throughput (GiB/s): %.2f\n",
+      title.c_str(), time_in_ms, GiBps);
   return GiBps;
 }
 
-
-}
+}  // namespace
 
 template <typename E, typename H = u4>
 void hf_run(std::string fname, size_t const x, size_t const y, size_t const z)
@@ -85,8 +91,8 @@ void hf_run(std::string fname, size_t const x, size_t const y, size_t const z)
   printf("peeking data, 20 elements\n");
   psz::peek_data<E>(od->control({D2H})->hptr(), 20);
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   dim3 len3 = dim3(x, y, z);
 
@@ -95,10 +101,10 @@ void hf_run(std::string fname, size_t const x, size_t const y, size_t const z)
   psz::histogram<PROPER_GPU_BACKEND, E>(
       od->dptr(), len, ht->dptr(), booklen, &time_hist, stream);
 
-  cusz::HuffmanCodec<E, u4> codec;
+  phf::HuffmanCodec<E, u4> codec;
   codec.init(len, booklen, pardeg /* not optimal for perf */);
 
-  // GpuMalloc(&d_compressed, len * sizeof(E) / 2);
+  // cudaMalloc(&d_compressed, len * sizeof(E) / 2);
   B* __out;
 
   // float  time;
@@ -106,8 +112,8 @@ void hf_run(std::string fname, size_t const x, size_t const y, size_t const z)
   codec.build_codebook(ht, booklen, stream);
 
   E* d_oridup;
-  GpuMalloc(&d_oridup, sizeof(E) * len);
-  GpuMemcpy(d_oridup, od->dptr(), sizeof(E) * len, GpuMemcpyD2D);
+  cudaMalloc(&d_oridup, sizeof(E) * len);
+  cudaMemcpy(d_oridup, od->dptr(), sizeof(E) * len, cudaMemcpyDeviceToDevice);
 
   auto time_comp_lossless = (float)INT_MAX;
   for (auto i = 0; i < 10; i++) {
@@ -131,7 +137,8 @@ void hf_run(std::string fname, size_t const x, size_t const y, size_t const z)
     codec.decode(d_compressed, xd->dptr(), stream);
 
     print_tobediscarded_info(codec.time_lossless(), "decomp_hf_decode");
-    time_decomp_lossless = std::min(time_decomp_lossless, codec.time_lossless());
+    time_decomp_lossless =
+        std::min(time_decomp_lossless, codec.time_lossless());
   }
   print_GBps<f4>(len, time_decomp_lossless, "decomp_hf_decode");
 
@@ -144,7 +151,7 @@ void hf_run(std::string fname, size_t const x, size_t const y, size_t const z)
   else
     cout << "!!!!  ERROR: NOT IDENTICAL." << endl;
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 
   /* a casual peek */
   printf("peeking xdata, 20 elements\n");

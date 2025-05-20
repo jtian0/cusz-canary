@@ -3,7 +3,7 @@
 #include <sycl/sycl.hpp>
 
 #include "cusz/suint.hh"
-#include "port.hh"
+#include "detail/port.hh"
 #include "subr.dp.inl"
 
 namespace psz {

@@ -131,8 +131,8 @@ void extrema(T *in, size_t len, T res[4])
   static const int RNG = 3;
 
   // TODO use external stream
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
 
@@ -143,13 +143,13 @@ void extrema(T *in, size_t len, T res[4])
   T h_min, h_max, failsafe;
   T *d_minel, *d_maxel;
 
-  CHECK_GPU(GpuMalloc(&d_minel, sizeof(T)));
-  CHECK_GPU(GpuMalloc(&d_maxel, sizeof(T)));
+  CHECK_GPU(cudaMalloc(&d_minel, sizeof(T)));
+  CHECK_GPU(cudaMalloc(&d_maxel, sizeof(T)));
 
   // failsafe init
-  CHECK_GPU(GpuMemcpy(&failsafe, in, sizeof(T), GpuMemcpyD2H));
-  CHECK_GPU(GpuMemcpy(d_minel, in, sizeof(T), GpuMemcpyD2D));
-  CHECK_GPU(GpuMemcpy(d_maxel, in, sizeof(T), GpuMemcpyD2D));
+  CHECK_GPU(cudaMemcpy(&failsafe, in, sizeof(T), cudaMemcpyDeviceToHost));
+  CHECK_GPU(cudaMemcpy(d_minel, in, sizeof(T), cudaMemcpyDeviceToDevice));
+  CHECK_GPU(cudaMemcpy(d_maxel, in, sizeof(T), cudaMemcpyDeviceToDevice));
 
 // launch
 #if defined(PSZ_USE_CUDA)
@@ -170,20 +170,20 @@ void extrema(T *in, size_t len, T res[4])
   }
 #endif
 
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   // collect results
-  CHECK_GPU(GpuMemcpy(&h_min, d_minel, sizeof(T), GpuMemcpyD2H));
-  CHECK_GPU(GpuMemcpy(&h_max, d_maxel, sizeof(T), GpuMemcpyD2H));
+  CHECK_GPU(cudaMemcpy(&h_min, d_minel, sizeof(T), cudaMemcpyDeviceToHost));
+  CHECK_GPU(cudaMemcpy(&h_max, d_maxel, sizeof(T), cudaMemcpyDeviceToHost));
 
   res[MINVAL] = h_min;
   res[MAXVAL] = h_max;
   res[RNG] = h_max - h_min;
 
-  CHECK_GPU(GpuFree(d_minel));
-  CHECK_GPU(GpuFree(d_maxel));
+  CHECK_GPU(cudaFree(d_minel));
+  CHECK_GPU(cudaFree(d_maxel));
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 }
 
 }  // namespace cu_hip

@@ -51,8 +51,8 @@ bool test1_debug()
 
   float t_histsp_ser, t_histsp_cuda;
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   psz::histsp<pszpolicy::SEQ, T, uint32_t>(
       in->hptr(), inlen, o_serial->hptr(), NSYM, &t_histsp_ser);
@@ -63,10 +63,10 @@ bool test1_debug()
   o_gpusp->control({D2H});
 
   // check for error
-  GpuErrorT error = GpuGetLastError();
-  if (error != GpuSuccess) {
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
     // print the CUDA error message and exit
-    printf("CUDA error: %s\n", GpuGetErrorString(error));
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
 
@@ -83,7 +83,7 @@ bool test1_debug()
     }
   }
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 
   delete in;
   delete o_gpusp;
@@ -138,8 +138,8 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
   in->control({H2D});
   float t_hist_cuda, t_histsp_ser, t_histsp_cuda;
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   psz::histsp<PROPER_GPU_BACKEND, T, uint32_t>(
       in->dptr(), inlen, o_gpusp->dptr(), NSYM, &t_histsp_cuda, stream);
@@ -153,10 +153,10 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
   o_gpusp->control({D2H});
 
   // check for error
-  GpuErrorT error = GpuGetLastError();
-  if (error != GpuSuccess) {
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
     // print the CUDA error message and exit
-    printf("CUDA error: %s\n", GpuGetErrorString(error));
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
 
@@ -179,7 +179,7 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
   }
   if (all_eq) printf("full-length test: all equal\n");
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 
   delete in;
   delete o_gpu;
@@ -193,7 +193,7 @@ template <int NSYM = 1024, int CHUNK = 32768, int NWARP = 8>
 bool perf(
     pszmem_cxx<T>* in, pszmem_cxx<FQ>* o_gpusp,       // for histsp
     pszmem_cxx<FQ>* o_gpu, pszmem_cxx<FQ>* o_serial,  // reference
-    GpuStreamT stream)
+    cudaStream_t stream)
 {
   constexpr auto NTREAD = 32 * NWARP;
 
@@ -201,14 +201,14 @@ bool perf(
       <<<(in->len() - 1) / CHUNK + 1, NTREAD, NSYM * sizeof(FQ), stream>>>(
           in->dptr(), in->len(), o_gpusp->dptr(), NSYM, NSYM / 2);
 
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   // check for error
-  GpuErrorT error = GpuGetLastError();
-  if (error != GpuSuccess) {
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
     // print the CUDA error message and exit
     printf("NSYM: %d\tCHUNK: %d\tNWARP: %d\n", NSYM, CHUNK, NWARP);
-    printf("CUDA error: %s\n", GpuGetErrorString(error));
+    printf("CUDA error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
 
@@ -253,8 +253,8 @@ bool test3_performance_tuning(size_t inlen, float gen_dist[], int distlen = K)
 
   float t_hist_gpu, t_histsp_ser;
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   // run CPU and GPU reference
   psz::histogram<PROPER_GPU_BACKEND, T>(
@@ -262,7 +262,7 @@ bool test3_performance_tuning(size_t inlen, float gen_dist[], int distlen = K)
 
   psz::histsp<pszpolicy::SEQ, T, uint32_t>(
       in->hptr(), inlen, o_serial->hptr(), NSYM, &t_histsp_ser);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
 // start testing & profiling
 #define PERF(NSYM, CHUNK, NWARP) \
@@ -297,7 +297,7 @@ bool test3_performance_tuning(size_t inlen, float gen_dist[], int distlen = K)
   PERF(NSYM, 65536 * 2, 16);
   PERF(NSYM, 65536 * 2, 32);
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
   delete in;
   delete o_gpu;
   delete o_gpusp;

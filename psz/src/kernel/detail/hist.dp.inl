@@ -8,7 +8,7 @@
 #include <limits>
 #include <sycl/sycl.hpp>
 
-#include "typing.hh"
+#include "detail/typing.hh"
 #include "utils/config.hh"
 #include "utils/timer.hh"
 

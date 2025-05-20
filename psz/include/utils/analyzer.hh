@@ -17,7 +17,7 @@
 #include <thrust/sort.h>
 
 #include "detail/busyheader.hh"
-#include "hfcodec.hh"
+#include "hf_hl.hh"
 #include "utils/timer.hh"
 
 using std::cout;
@@ -76,13 +76,13 @@ class Analyzer {
       // caveat: no residence check
       thrust::sort(thrust::device, in, in + len);
       T* htmp;
-      GpuMallocHost(&htmp, sizeof(T) * len);
-      GpuMemcpy(htmp, in, sizeof(T) * len, GpuMemcpyD2H);
+      cudaMallocHost(&htmp, sizeof(T) * len);
+      cudaMemcpy(htmp, in, sizeof(T) * len, cudaMemcpyDeviceToHost);
       for (auto i = 0; i < len; i += step) {  //
         res.push_back(htmp[i]);
       }
       res.push_back(htmp[len - 1]);
-      GpuFreeHost(htmp);
+      cudaFreeHost(htmp);
     }
     else {  // fallback
       std::sort(in, in + len);
@@ -192,9 +192,9 @@ class Analyzer {
     // TODO somewhere explicitly state that null codeword is of length 0xff
     std::sort(v_canon_cb.begin(), v_canon_cb.end(), [](Huff& a, Huff& b) {
       auto a_bits =
-          reinterpret_cast<struct PackedWordByWidth<sizeof(Huff)>*>(&a)->bits;
+          reinterpret_cast<struct HuffmanWord<sizeof(Huff)>*>(&a)->bits;
       auto b_bits =
-          reinterpret_cast<struct PackedWordByWidth<sizeof(Huff)>*>(&b)->bits;
+          reinterpret_cast<struct HuffmanWord<sizeof(Huff)>*>(&b)->bits;
       return a_bits < b_bits;
     });
     std::sort(v_freq.begin(), v_freq.end(), std::greater<Huff>());
@@ -202,9 +202,9 @@ class Analyzer {
     double real_avgb = 0.0;
     for (auto i = 0; i < num_bins; i++) {
       if (v_freq[i] != 0) {
-        auto bits = reinterpret_cast<struct PackedWordByWidth<sizeof(Huff)>*>(
-                        &v_canon_cb[i])
-                        ->bits;
+        auto bits =
+            reinterpret_cast<struct HuffmanWord<sizeof(Huff)>*>(&v_canon_cb[i])
+                ->bits;
         real_avgb += v_freq[i] * bits;
       }
     }
@@ -212,8 +212,7 @@ class Analyzer {
 
     theory.huffman_stat.avgb = real_avgb;
     theory.huffman_stat.min_bitlen =
-        reinterpret_cast<struct PackedWordByWidth<sizeof(Huff)>*>(
-            &v_canon_cb.at(0))
+        reinterpret_cast<struct HuffmanWord<sizeof(Huff)>*>(&v_canon_cb.at(0))
             ->bits;
 
     return *this;

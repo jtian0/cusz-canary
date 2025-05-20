@@ -17,6 +17,7 @@
 #ifdef PSZ_USE_CUDA
 
 #include <cuda_runtime.h>
+
 #include "mem/memseg.h"
 template <typename Ctype>
 class pszmem_cxx {
@@ -92,11 +93,11 @@ class pszmem_cxx {
         pszmem_cleardevice_cuda(m);
       else if (c == H2D)
         pszmem_h2d_cuda(m);
-      else if (c == ASYNC_H2D)
+      else if (c == Async_H2D)
         pszmem_h2d_cudaasync(m, stream);
       else if (c == D2H)
         pszmem_d2h_cuda(m);
-      else if (c == ASYNC_D2H)
+      else if (c == Async_D2H)
         pszmem_d2h_cudaasync(m, stream);
       else if (c == ExtremaScan)
         extrema_scan(maxval, minval, range);
@@ -178,7 +179,6 @@ class pszmem_cxx {
     m->uni = uni, m->d_borrowed = m->h_borrowed = true;
     return this;
   }
-
 
   // getter
   size_t len() const { return m->len; }

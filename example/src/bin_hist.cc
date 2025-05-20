@@ -11,10 +11,10 @@
 
 #include <string>
 
+#include "detail/port.hh"
 #include "ex_utils.hh"
 #include "kernel.hh"
 #include "mem.hh"
-#include "port.hh"
 #include "stat.hh"
 
 #define BASE false
@@ -40,8 +40,8 @@ void real_data_test(size_t len, size_t bklen, string fname)
   bs->control({MallocHost}), bg->control({Malloc, MallocHost});
   os->control({MallocHost}), og->control({Malloc, MallocHost});
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   float tbs, tos, tbg, tog;
 
@@ -71,10 +71,10 @@ void real_data_test(size_t len, size_t bklen, string fname)
   printf("\n");
 
   // check for error
-  GpuErrorT error = GpuGetLastError();
-  if (error != GpuSuccess) {
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
     // print the CUDA error message and exit
-    printf("GPU error: %s\n", GpuGetErrorString(error));
+    printf("GPU error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
 
@@ -96,7 +96,7 @@ void real_data_test(size_t len, size_t bklen, string fname)
   delete bg, delete bs;
   delete og, delete os;
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 }
 
 template <typename T>
@@ -120,8 +120,8 @@ void dummy_data_test()
   // serial and optim
   serial->control({MallocHost}), gpu->control({Malloc, MallocHost});
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   float tbs, tos, tbg, tog;
 
@@ -131,9 +131,9 @@ void dummy_data_test()
   gpu->control({D2H});
 
   // check for error
-  GpuErrorT error = GpuGetLastError();
-  if (error != GpuSuccess) {
-    printf("GPU error: %s\n", GpuGetErrorString(error));
+  cudaError_t error = cudaGetLastError();
+  if (error != cudaSuccess) {
+    printf("GPU error: %s\n", cudaGetErrorString(error));
     exit(-1);
   }
 
@@ -149,7 +149,7 @@ void dummy_data_test()
   delete wn;
   delete serial, delete gpu;
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 }
 
 int main(int argc, char** argv)

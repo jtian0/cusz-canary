@@ -3,14 +3,14 @@
 #include <sycl/sycl.hpp>
 
 #include "cusz/type.h"
-#include "port.hh"
+#include "detail/port.hh"
 // definitions
 #include "detail/hist.dp.inl"
 #include "kernel/hist.hh"
 
 #define SPECIAL(T)                                                         \
   template <>                                                              \
-  psz_error_status psz::histogram<pszpolicy::CUDA, T>(                    \
+  psz_error_status psz::histogram<pszpolicy::CUDA, T>(                     \
       T * in, size_t const inlen, uint32_t* out_hist, int const nbin,      \
       float* milliseconds, void* stream)                                   \
   {                                                                        \

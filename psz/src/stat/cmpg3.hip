@@ -1,5 +1,5 @@
 #include "detail/ebness_thrust.inl"
-#include "stat/compare.thrust.hh"
+#include "detail/stat/compare.thrust.hh"
 
 #define THRUSTGPU_COMPARE_LOSSY(Tliteral, T)       \
     template bool psz::thrustgpu::thrustgpu_error_bounded<T>( \

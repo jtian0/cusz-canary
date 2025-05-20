@@ -2,7 +2,7 @@
 #include <fstream>
 
 #include "detail/busyheader.hh"
-#include "port.hh"
+#include "detail/port.hh"
 // definitions
 #include "detail/t_cudaproto.inl"
 

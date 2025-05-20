@@ -9,7 +9,7 @@
  *
  */
 
-#include "port.hh"
+#include "detail/port.hh"
 
 #include "cusz/type.h"
 #include "detail/l23.inl"

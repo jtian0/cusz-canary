@@ -8,7 +8,7 @@
 #include <sycl/sycl.hpp>
 
 #include "cusz/type.h"
-#include "stat/compare/compare.dpl.hh"
+#include "detail/stat/compare/compare.dpl.hh"
 
 namespace psz {
 

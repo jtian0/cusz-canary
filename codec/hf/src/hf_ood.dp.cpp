@@ -19,18 +19,16 @@
 
 #include "detail/busyheader.hh"
 #include "hf/hf.hh"
+#include "hf/hf_kernels.hh"
 #include "hf/hfbk.hh"
-#include "hf/hfcodec.hh"
-#include "mem/memseg_cxx.hh"
+#include "mem/cxx_memobj.h"
 #include "typing.hh"
 #include "utils/err.hh"
 #include "utils/format.hh"
 
-// deps
-#include "port.hh"
 // definitions
 #include "detail/hfclass.dp.inl"
 
-template class cusz::HuffmanCodec<u1, u4>;
-template class cusz::HuffmanCodec<u2, u4>;
-template class cusz::HuffmanCodec<u4, u4>;
+template class phf::HuffmanCodec<u1, u4>;
+template class phf::HuffmanCodec<u2, u4>;
+template class phf::HuffmanCodec<u4, u4>;

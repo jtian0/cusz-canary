@@ -13,7 +13,7 @@
 #define D1C4C282_1485_4677_BC6B_F3DB79ED853E
 
 #include "cusz/suint.hh"
-#include "port.hh"
+#include "detail/port.hh"
 // #include "subr.cuhip.inl"
 #include "wave32.cuhip.inl"
 

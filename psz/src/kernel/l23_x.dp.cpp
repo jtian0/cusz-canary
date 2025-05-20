@@ -4,8 +4,8 @@
 #include <sycl/sycl.hpp>
 
 #include "cusz/type.h"
+#include "detail/port.hh"
 #include "kernel/lrz.hh"
-#include "port.hh"
 #include "utils/err.hh"
 #include "utils/timer.hh"
 // definitions

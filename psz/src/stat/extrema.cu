@@ -1,8 +1,8 @@
 #include <cuda_runtime.h>
 
 #include "cusz/type.h"
-#include "port.hh"
-#include "stat/compare/compare.cu_hip.hh"
+#include "detail/compare.cu_hip.hh"
+#include "detail/port.hh"
 #include "utils/err.hh"
 // definitions
 #include "detail/extrema.cuhip.inl"

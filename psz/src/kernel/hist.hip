@@ -1,7 +1,7 @@
 // deps
 #include <hip/hip_runtime.h>
 #include "cusz/type.h"
-#include "port.hh"
+#include "detail/port.hh"
 // definitions
 #include "detail/hist_cu.inl"
 #include "kernel/hist.hh"
@@ -13,7 +13,7 @@
       float* milliseconds, void* stream)                                \
   {                                                                     \
     return psz::cu_hip::hist_default<T>(                       \
-        in, inlen, out_hist, nbin, milliseconds, (GpuStreamT)stream); \
+        in, inlen, out_hist, nbin, milliseconds, (cudaStream_t)stream); \
   }
 
 // SPECIAL(u1);

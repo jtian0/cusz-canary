@@ -1,8 +1,8 @@
 #include <hip/hip_runtime.h>
 #include "cusz/type.h"
-#include "stat/compare.cu_hip.hh"
+#include "detail/stat/compare.cu_hip.hh"
 #include "utils/err.hh"
-#include "port.hh"
+#include "detail/port.hh"
 // definitions
 #include "detail/extrema.cuhip.inl"
 

@@ -16,12 +16,29 @@
 extern "C" {
 #endif
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-typedef enum psz_execution_policy { SEQ, CUDA, HIP, ONEAPI, THRUST } pszpolicy;
+#include "c_type.h"
+
+typedef _portable_device psz_device;
+typedef _portable_runtime psz_runtime;
+typedef _portable_runtime psz_backend;
+typedef _portable_toolkit psz_toolkit;
+
+typedef psz_runtime psz_policy_deprecated;
+typedef psz_runtime psz_execution_policy;
+typedef psz_policy_deprecated pszpolicy;
+
+typedef _portable_stream_t psz_stream_t;
+typedef _portable_mem_control psz_mem_control;
+typedef _portable_dtype psz_dtype;
+typedef _portable_len3 psz_len3;
+typedef _portable_size3 psz_size3;
+typedef _portable_data_summary psz_data_summary;
+
 typedef psz_execution_policy psz_platform;
-typedef enum psz_device { CPU, NVGPU, AMDGPU, INTELGPU } pszdevice;
 
 typedef void* uninit_stream_t;
 
@@ -49,21 +66,21 @@ typedef enum psz_error_status {  //
 } psz_error_status;
 typedef psz_error_status pszerror;
 
-typedef enum psz_dtype  //
-{ __F0 = 0,
-  F4 = 4,
-  F8 = 8,
-  __U0 = 10,
-  U1 = 11,
-  U2 = 12,
-  U4 = 14,
-  U8 = 18,
-  __I0 = 20,
-  I1 = 21,
-  I2 = 22,
-  I4 = 24,
-  I8 = 28,
-  ULL = 31 } psz_dtype;
+// typedef enum psz_dtype  //
+// { __F0 = 0,
+//   F4 = 4,
+//   F8 = 8,
+//   __U0 = 10,
+//   U1 = 11,
+//   U2 = 12,
+//   U4 = 14,
+//   U8 = 18,
+//   __I0 = 20,
+//   I1 = 21,
+//   I2 = 22,
+//   I4 = 24,
+//   I8 = 28,
+//   ULL = 31 } psz_dtype;
 
 // aliasing
 typedef uint8_t u1;
@@ -201,26 +218,26 @@ typedef u1* pszout;
 typedef pszout* ptr_pszout;
 
 struct INTERPOLATION_PARAMS {
-    // 
-    double alpha{1.75};
-    double beta{4.0};
-    
-    //
-    //bool interpolators[3];
+  //
+  double alpha{1.75};
+  double beta{4.0};
 
-    bool use_md[6];
-    bool use_natural[6];
-    
-    //
-    bool reverse[6];
-    uint8_t auto_tuning{3};
+  //
+  // bool interpolators[3];
 
-    //
-    INTERPOLATION_PARAMS() : use_md{true, true, false, false, false, false}, 
-    use_natural{false, false, false, false, false, false},
-     reverse{false, false, false, false, false, false} {};
+  bool use_md[6];
+  bool use_natural[6];
+
+  //
+  bool reverse[6];
+  uint8_t auto_tuning{3};
+
+  //
+  INTERPOLATION_PARAMS() :
+      use_md{true, true, false, false, false, false},
+      use_natural{false, false, false, false, false, false},
+      reverse{false, false, false, false, false, false} {};
 };
-
 
 #ifdef __cplusplus
 }

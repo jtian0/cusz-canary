@@ -8,9 +8,9 @@
 #include <sycl/sycl.hpp>
 #include <type_traits>
 
+#include "detail/port.hh"
 #include "kernel/lrz.hh"
 #include "mem/compact.hh"
-#include "port.hh"
 #include "wave32.dp.inl"
 
 #define SETUP_ZIGZAG                                                         \

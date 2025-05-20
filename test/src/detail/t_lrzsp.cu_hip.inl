@@ -16,12 +16,12 @@
 #include <stdexcept>
 #include <typeinfo>
 
+#include "detail/compare.stl.hh"
+#include "detail/compare.thrust.hh"
 #include "kernel/lrz.hh"
 #include "kernel/spv.hh"
 #include "mem/compact.hh"
 #include "mem/memseg_cxx.hh"
-#include "stat/compare/compare.stl.hh"
-#include "stat/compare/compare.thrust.hh"
 #include "utils/print_arr.hh"
 #include "utils/viewer.hh"
 
@@ -72,8 +72,8 @@ bool testcase(
   }
   oridata->control({H2D});
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   float time;
   auto len3 = dim3(x, y, z);
@@ -81,16 +81,16 @@ bool testcase(
   psz_comp_l23r<T, EQ, false>(  //
       oridata->dptr(), len3, eb, radius, ectrl_focus->dptr(), &compact_outlier,
       &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   psz_comp_l23<T, EQ>(  //
       oridata->dptr(), len3, eb, radius, ectrl_ref->dptr(), outlier->dptr(),
       &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
-  ectrl_focus->control({ASYNC_D2H}, stream);
-  ectrl_ref->control({ASYNC_D2H}, stream);
-  GpuStreamSync(stream);
+  ectrl_focus->control({Async_D2H}, stream);
+  ectrl_ref->control({Async_D2H}, stream);
+  cudaStreamSynchronize(stream);
 
   auto two_ectrl_eq = true;
   for (auto i = 0; i < len; i++) {
@@ -157,7 +157,7 @@ bool testcase(
       ectrl_focus->dptr(), len3, de_data->dptr(), eb, radius,
       de_data->dptr(),  //
       &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   de_data->control({D2H});
 
@@ -169,7 +169,7 @@ bool testcase(
 
   // psz::eval_dataquality_gpu(oridata->dptr(), de_data->dptr(), len);
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
 
   delete oridata;
   delete de_data;

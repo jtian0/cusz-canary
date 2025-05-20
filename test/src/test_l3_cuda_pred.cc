@@ -1,6 +1,6 @@
 // deps
 #include "detail/busyheader.hh"
-#include "port.hh"
+#include "detail/port.hh"
 #include "rand.hh"
 // definitions
 #include "detail/t_cuda_pred.inl"

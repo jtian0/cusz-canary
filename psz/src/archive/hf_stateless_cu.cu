@@ -12,11 +12,11 @@
 #include <numeric>
 
 #include "cusz/type.h"
+#include "detail/typing.hh"
 #include "hf/hf2.h"
 #include "hf/hf_bk.hh"
-#include "hf/hfcodec.cu.hh"
 #include "hf/hf_struct.h"
-#include "typing.hh"
+#include "hf/hfcodec.cu.hh"
 
 template <typename T, typename H, typename M = uint32_t>
 psz_error_status hf_encode(

@@ -1,7 +1,7 @@
 // deps
 #include "cusz/type.h"
+#include "detail/port.hh"
 #include "dryrun.hh"
-#include "port.hh"
 // definitions
 #include "kernel/detail/dryrun.cuhip.inl"
 

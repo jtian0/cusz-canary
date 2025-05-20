@@ -20,12 +20,12 @@
 #include "cusz/header.h"
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "hf.hh"
+#include "detail/port.hh"
+#include "hf_hl.hh"
 #include "kernel.hh"
 #include "lc_gen/lc_gen.h"
 #include "log.hh"
 #include "mem.hh"
-#include "port.hh"
 #include "utils/config.hh"
 #include "utils/err.hh"
 
@@ -63,8 +63,6 @@ template <class C>
 template <class CONFIG>
 Compressor<C>* Compressor<C>::init(CONFIG* ctx, bool debug)
 {
-  codec = new Codec;
-
   const auto radius = ctx->radius;
   const auto pardeg = ctx->vle_pardeg;
   // const auto density_factor = ctx->nz_density_factor;
@@ -78,7 +76,8 @@ Compressor<C>* Compressor<C>::init(CONFIG* ctx, bool debug)
 
   mem = new pszmempool_cxx<T, E, H>(x, radius, y, z);
 
-  codec->init(mem->len, booklen, pardeg, debug);
+  // codec->init(mem->len, booklen, pardeg, debug);
+  codec = new Codec(mem->len, pardeg);
 
   return this;
 }
@@ -129,7 +128,7 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
 
   /* make outlier count seen on host */
   {
-    mem->compact->make_host_accessible((GpuStreamT)stream);
+    mem->compact->make_host_accessible((cudaStream_t)stream);
     ctx->splen = mem->compact->num_outliers();
   }
 
@@ -159,7 +158,7 @@ COR::compress_encode(pszctx* ctx, void* stream)
 
   /* Huffman encoding */
   {
-    codec->build_codebook(mem->ht, booklen, stream);
+    codec->buildbook(mem->hist(), booklen, stream);
     // [TODO] CR estimation must be after building codebook; need a flag.
     // if (ctx->report_cr_est) {
     //   auto overhead = spline_in_use() ? sizeof(T) * mem->ac->len() : 0;
@@ -191,9 +190,9 @@ COR::compress_update_header(pszctx* ctx, void* stream)
 
   // TODO no need to copy header to device
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-  CHECK_GPU(GpuMemcpyAsync(
-      mem->compressed() + 0, &header, sizeof(header), GpuMemcpyH2D,
-      (GpuStreamT)stream));
+  CHECK_GPU(cudaMemcpyAsync(
+      mem->compressed() + 0, &header, sizeof(header), cudaMemcpyHostToDevice,
+      (cudaStream_t)stream));
 #elif defined(PSZ_USE_1API)
   auto queue = (sycl::queue*)stream;
   queue->memcpy(mem->compressed() + 0, &header, sizeof(header));
@@ -271,9 +270,9 @@ try
 
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
   auto concat_d2d = [&](int FIELD, void* src, u4 dst_offset = 0) {
-    CHECK_GPU(GpuMemcpyAsync(
-        dst(FIELD, dst_offset), src, nbyte[FIELD], GpuMemcpyD2D,
-        (GpuStreamT)stream));
+    CHECK_GPU(cudaMemcpyAsync(
+        dst(FIELD, dst_offset), src, nbyte[FIELD], cudaMemcpyDeviceToDevice,
+        (cudaStream_t)stream));
   };
 #elif defined(PSZ_USE_1API)
   auto concat_d2d = [&](int FIELD, void* src, u4 dst_offset = 0) {
@@ -304,13 +303,13 @@ try
   }
 
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-  CHECK_GPU(GpuMemcpyAsync(
+  CHECK_GPU(cudaMemcpyAsync(
       dst(Header::SPFMT, 0), mem->compact_val(), sizeof(T) * splen,
-      GpuMemcpyD2D, (GpuStreamT)stream));
-  CHECK_GPU(GpuMemcpyAsync(
+      cudaMemcpyDeviceToDevice, (cudaStream_t)stream));
+  CHECK_GPU(cudaMemcpyAsync(
       dst(Header::SPFMT, sizeof(T) * splen), mem->compact_idx(),
-      sizeof(M) * splen, GpuMemcpyD2D, (GpuStreamT)stream));
-  /* debug */ CHECK_GPU(GpuStreamSync(stream));
+      sizeof(M) * splen, cudaMemcpyDeviceToDevice, (cudaStream_t)stream));
+  /* debug */ CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
 #elif defined(PSZ_USE_1API)
   queue->memcpy(
       dst(Header::SPFMT, 0),  //
@@ -326,10 +325,10 @@ try
         (uint8_t*)dst(Header::VLE),
         nbyte[Header::VLE] + nbyte[Header::ANCHOR] + nbyte[Header::SPFMT],
         &comp_rtr_out, &comp_rtr_outlen, &time_rtr, stream);
-    CHECK_GPU(GpuMemcpyAsync(
-        dst(Header::VLE), comp_rtr_out, comp_rtr_outlen, GpuMemcpyD2D,
-        (GpuStreamT)stream));
-    CHECK_GPU(GpuStreamSync(stream));
+    CHECK_GPU(cudaMemcpyAsync(
+        dst(Header::VLE), comp_rtr_out, comp_rtr_outlen,
+        cudaMemcpyDeviceToDevice, (cudaStream_t)stream));
+    CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
     header.entry[Header::END + 1] =
         header.entry[Header::VLE] + comp_rtr_outlen;
   }
@@ -338,10 +337,10 @@ try
         (uint8_t*)dst(Header::ANCHOR),
         nbyte[Header::ANCHOR] + nbyte[Header::SPFMT], &comp_bitr_out,
         &comp_bitr_outlen, &time_bitr, stream);
-    CHECK_GPU(GpuMemcpyAsync(
-        dst(Header::ANCHOR), comp_bitr_out, comp_bitr_outlen, GpuMemcpyD2D,
-        (GpuStreamT)stream));
-    CHECK_GPU(GpuStreamSync(stream));
+    CHECK_GPU(cudaMemcpyAsync(
+        dst(Header::ANCHOR), comp_bitr_out, comp_bitr_outlen,
+        cudaMemcpyDeviceToDevice, (cudaStream_t)stream));
+    CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
     header.entry[Header::END + 1] =
         header.entry[Header::ANCHOR] + comp_bitr_outlen;
   }
@@ -376,8 +375,8 @@ COR::dump(std::vector<pszmem_dump> list, char const* basename)
       mem->e->control({D2H})->file(ofn(".psz_quant"), ToFile);
     else if (i == PszHist)
       mem->ht->control({D2H})->file(ofn(".psz_hist"), ToFile);
-    else if (i > PszHf______ and i < END)
-      codec->dump({i}, basename);
+    // else if (i > PszHf______ and i < END)
+    //   codec->dump({i}, basename);
     else
       printf("[psz::dump] not a valid segment to dump.");
   }
@@ -510,9 +509,10 @@ COR::decompress(
   if (not header) {
     header = new Header;
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    CHECK_GPU(GpuMemcpyAsync(
-        header, in, sizeof(Header), GpuMemcpyD2H, (GpuStreamT)stream));
-    CHECK_GPU(GpuStreamSync(stream));
+    CHECK_GPU(cudaMemcpyAsync(
+        header, in, sizeof(Header), cudaMemcpyDeviceToHost,
+        (cudaStream_t)stream));
+    CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
 #elif defined(PSZ_USE_1API)
     ((sycl::queue*)stream)->memcpy(header, in, sizeof(Header));
     ((sycl::queue*)stream)->wait();

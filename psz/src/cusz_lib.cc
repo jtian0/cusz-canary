@@ -15,8 +15,8 @@
 #include "cusz/context.h"
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "hf.hh"
-#include "port.hh"
+#include "detail/port.hh"
+#include "hf_hl.hh"
 #include "tehm.hh"
 
 pszpredictor pszdefault_predictor() { return {Spline}; }
@@ -117,7 +117,7 @@ pszerror psz_decompress(
 
     cor->decompress(
         comp->header, compressed, (f4*)(decompressed), (f4*)(outlier_tmp),
-        (GpuStreamT)stream);
+        (cudaStream_t)stream);
     cor->export_timerecord((psz::TimeRecord*)record);
   }
   else {

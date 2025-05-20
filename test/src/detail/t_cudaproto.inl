@@ -73,7 +73,7 @@ bool test1(
   else if (dim == 3)
     proto::c_lorenzo_3d1l<T><<<t3d_grid_dim, t3d_block_dim>>>(
         input->dptr(), len3, stride3, radius, 1.0, eq->dptr(), outlier);
-  GpuDeviceSync();
+  cudaDeviceSynchronize();
 
   eq->control({D2H});
 
@@ -128,7 +128,7 @@ bool test2(
   else {
     throw std::runtime_error("must be 1, 2, or 3D.");
   }
-  GpuDeviceSync();
+  cudaDeviceSynchronize();
 
   xdata->control({D2H});
 
@@ -177,29 +177,29 @@ bool test3(
   if (dim == 1) {
     proto::c_lorenzo_1d1l<T><<<t1d_grid_dim, t1d_block_dim>>>(
         input->dptr(), len3, stride3, radius, ebx2_r, eq->dptr(), outlier);
-    GpuDeviceSync();
+    cudaDeviceSynchronize();
     proto::x_lorenzo_1d1l<T><<<t1d_grid_dim, t1d_block_dim>>>(
         eq->dptr(), xdata->dptr() /* outlier */, len3, stride3, radius, ebx2,
         xdata->dptr());
-    GpuDeviceSync();
+    cudaDeviceSynchronize();
   }
   else if (dim == 2) {
     proto::c_lorenzo_2d1l<T><<<t2d_grid_dim, t2d_block_dim>>>(
         input->dptr(), len3, stride3, radius, ebx2_r, eq->dptr(), outlier);
-    GpuDeviceSync();
+    cudaDeviceSynchronize();
     proto::x_lorenzo_2d1l<T><<<t2d_grid_dim, t2d_block_dim>>>(
         eq->dptr(), xdata->dptr() /* outlier */, len3, stride3, radius, ebx2,
         xdata->dptr());
-    GpuDeviceSync();
+    cudaDeviceSynchronize();
   }
   else if (dim == 3) {
     proto::c_lorenzo_3d1l<T><<<t3d_grid_dim, t3d_block_dim>>>(
         input->dptr(), len3, stride3, radius, ebx2_r, eq->dptr(), outlier);
-    GpuDeviceSync();
+    cudaDeviceSynchronize();
     proto::x_lorenzo_3d1l<T><<<t3d_grid_dim, t3d_block_dim>>>(
         eq->dptr(), xdata->dptr() /* outlier */, len3, stride3, radius, ebx2,
         xdata->dptr());
-    GpuDeviceSync();
+    cudaDeviceSynchronize();
   }
 
   xdata->control({D2H});

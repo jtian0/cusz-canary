@@ -6,7 +6,7 @@
 #include <sycl/sycl.hpp>
 
 #include "detail/busyheader.hh"
-#include "port.hh"
+#include "detail/port.hh"
 #include "rand.hh"
 // definitions
 #include "detail/t_lrzsp.dp.inl"

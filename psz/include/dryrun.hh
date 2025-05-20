@@ -2,8 +2,8 @@
 #define D3610824_7841_4292_99E9_D3F4F57E5C80
 
 #include "cusz/context.h"
+#include "detail/port.hh"
 #include "mem/memseg_cxx.hh"
-#include "port.hh"
 
 namespace psz {
 namespace cu_hip {

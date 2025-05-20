@@ -11,10 +11,10 @@
 
 #include <typeinfo>
 
+#include "detail/compare.stl.hh"
+#include "detail/compare.thrust.hh"
 #include "kernel/lrz.hh"
 #include "mem/memseg_cxx.hh"
-#include "stat/compare/compare.stl.hh"
-#include "stat/compare/compare.thrust.hh"
 #include "utils/print_arr.hh"
 #include "utils/viewer.hh"
 
@@ -41,8 +41,8 @@ bool f(
 
   psz::testutils::cu_hip::rand_array<T>(oridata->uniptr(), len);
 
-  GpuStreamT stream;
-  GpuStreamCreate(&stream);
+  cudaStream_t stream;
+  cudaStreamCreate(&stream);
 
   float time;
   auto len3 = dim3(x, y, z);
@@ -51,14 +51,14 @@ bool f(
       oridata->uniptr(), len3, eb, radius,   // input and config
       errctrl->uniptr(), outlier->uniptr(),  // output
       &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   psz_decomp_l23<T, Eq, FP>(                       //
       errctrl->uniptr(), len3, outlier->uniptr(),  // input
       eb, radius,                                  // input (config)
       de_data->uniptr(),                           // output
       &time, stream);
-  GpuStreamSync(stream);
+  cudaStreamSynchronize(stream);
 
   // psz::peek_data(oridata->uniptr(), 100);
   // psz::peek_data(de_data->uniptr(), 100);
@@ -71,7 +71,7 @@ bool f(
 
   // psz::eval_dataquality_gpu(oridata->uniptr(), de_data->uniptr(), len);
 
-  GpuStreamDestroy(stream);
+  cudaStreamDestroy(stream);
   delete oridata;
   delete de_data;
   delete errctrl;

@@ -12,8 +12,7 @@
 
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "hfbk_impl.hh"
-#include "hfword.hh"
+#include "hf_impl.hh"
 #include "utils/timer.hh"
 
 HuffmanTree* create_tree_serial(int state_num)
@@ -82,8 +81,7 @@ HuffmanTree* create_hfserial_tree_gpu(int state_num)
   return ht;
 }
 
-node_list new_node(
-    HuffmanTree* ht, size_t freq, uint32_t c, node_list a, node_list b)
+node_list new_node(HuffmanTree* ht, size_t freq, uint32_t c, node_list a, node_list b)
 {
   node_list n = ht->pool + ht->n_nodes++;
   if (freq) {
@@ -144,8 +142,7 @@ node_list qremove(HuffmanTree* ht)
  * @out2 should be 0 as well.
  * @index: the index of the byte
  * */
-void build_code(
-    HuffmanTree* ht, node_list n, int len, uint64_t out1, uint64_t out2)
+void build_code(HuffmanTree* ht, node_list n, int len, uint64_t out1, uint64_t out2)
 {
   if (n->t) {
     ht->code[n->c] = (uint64_t*)malloc(2 * sizeof(uint64_t));
@@ -179,11 +176,8 @@ void build_code(
 }
 
 template <typename H>
-void hf_buildtree_impl1(
-    uint32_t* ext_freq, uint16_t booklen, H* book, float* time)
+void phf_CPU_build_codebook_v1(uint32_t* ext_freq, uint16_t booklen, H* book)
 {
-  using NodeType = node_t;
-
   auto state_num = 2 * booklen;
   auto all_nodes = 2 * state_num;
 
@@ -194,24 +188,16 @@ void hf_buildtree_impl1(
   auto tree = create_tree_serial(state_num);
 
   {  // real "kernel"
-    auto a = hires::now();
-
     for (size_t i = 0; i < tree->all_nodes; i++)
       if (freq[i]) qinsert(tree, new_node(tree, freq[i], i, 0, 0));
-    while (tree->qend > 2)
-      qinsert(tree, new_node(tree, 0, 0, qremove(tree), qremove(tree)));
-    __pszhf_stack<NodeType, sizeof(H)>::template inorder_traverse<H>(
-        tree->qq[1], book);
-
-    auto b = hires::now();
-    auto t = static_cast<duration_t>(b - a).count() * 1000;
-    if (time) *time = t;
+    while (tree->qend > 2) qinsert(tree, new_node(tree, 0, 0, qremove(tree), qremove(tree)));
+    phf_stack<node_t, sizeof(H)>::template inorder_traverse<H>(tree->qq[1], book);
   }
 
   destroy_tree(tree);
   delete[] freq;
 }
 
-template void hf_buildtree_impl1<u4>(u4*, u2, u4*, f4*);
-template void hf_buildtree_impl1<u8>(u4*, u2, u8*, f4*);
-template void hf_buildtree_impl1<ull>(u4*, u2, ull*, f4*);
+template void phf_CPU_build_codebook_v1<u4>(u4*, u2, u4*);
+template void phf_CPU_build_codebook_v1<u8>(u4*, u2, u8*);
+template void phf_CPU_build_codebook_v1<ull>(u4*, u2, ull*);

@@ -16,7 +16,7 @@
 #include "cusz/header.h"
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "port.hh"
+#include "detail/port.hh"
 //
 #include "cusz/context.h"
 #include "dryrun.hh"
@@ -44,8 +44,8 @@ class CLI {
   static void do_dryrun(pszctx* ctx, bool dualquant = true)
   {
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    GpuStreamT stream;
-    GpuStreamCreate(&stream);
+    cudaStream_t stream;
+    cudaStreamCreate(&stream);
 #elif defined(PSZ_USE_1API)
     dpct::device_ext& dev_ct1 = dpct::get_current_device();
     dpct::queue_ptr stream = dev_ct1.create_queue();
@@ -66,9 +66,9 @@ class CLI {
 
     original->debug();
 
-    original->file(fname, FromFile)->control({ASYNC_H2D}, stream);
+    original->file(fname, FromFile)->control({Async_H2D}, stream);
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    CHECK_GPU(GpuStreamSync((GpuStreamT)stream));
+    CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
 #elif defined(PSZ_USE_1API)
     stream->wait();
 #endif
@@ -95,7 +95,7 @@ class CLI {
     delete reconst;
 
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    GpuStreamDestroy(stream);
+    cudaStreamDestroy(stream);
 #elif defined(PSZ_USE_1API)
     dev_ct1.destroy_queue(stream);
 #endif
@@ -223,14 +223,14 @@ class CLI {
     psz_compressor* compressor = psz_create(framework, F4);
 
 #if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    GpuStreamT stream;
-    CHECK_GPU(GpuStreamCreate(&stream));
+    cudaStream_t stream;
+    CHECK_GPU(cudaStreamCreate(&stream));
 
     // TODO enable f8
     if (ctx->task_dryrun) do_dryrun<float>(ctx);
     if (ctx->task_construct) do_construct(ctx, compressor, stream);
     if (ctx->task_reconstruct) do_reconstruct(ctx, compressor, stream);
-    if (stream) GpuStreamDestroy(stream);
+    if (stream) cudaStreamDestroy(stream);
 
 #elif defined(PSZ_USE_1API)
 

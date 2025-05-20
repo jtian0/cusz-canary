@@ -46,11 +46,11 @@ void dryrun(size_t len, T* original, T* reconst, PROPER_EB eb, void* stream)
   auto ebx2_r = 1 / (eb * 2);
   auto ebx2 = eb * 2;
 
-  dryrun_kernel<<<div(len, 256), 256, 256 * sizeof(T), (GpuStreamT)stream>>>(
+  dryrun_kernel<<<div(len, 256), 256, 256 * sizeof(T), (cudaStream_t)stream>>>(
       original, reconst, len, ebx2_r, ebx2);
 
   // CHECK_CUDA(cudaStreamSynchronize((cudaStream_t)stream));
-  GpuStreamSync(stream);
+  cudaStreamSynchronize((cudaStream_t)stream);
 }
 
 }  // namespace cu_hip
