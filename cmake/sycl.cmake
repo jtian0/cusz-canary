@@ -1,4 +1,5 @@
 add_compile_definitions(PSZ_USE_1API)
+add_compile_definitions(_PORTABLE_USE_1API)
 
 # DPCPP 2023.2.0:
 # IntelDPCPP Config will be deprecated soon.  Use IntelSYCL config instead!
@@ -13,9 +14,9 @@ if(IntelSYCL_FOUND)
   # With only SYCL_FLAGS, static check won't pass.
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     # Do something for Debug build type
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsycl -g -Rno-debug-disables-optimization")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsycl -g -fno-sycl-id-queries-fit-in-int -Rno-debug-disables-optimization")
   else()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsycl -g -O2")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsycl -g -fno-sycl-id-queries-fit-in-int -O2")
   endif()
 
   set(COMPILE_FLAGS "-fsycl")
@@ -75,11 +76,9 @@ target_link_libraries(pszkernel_seq PUBLIC pszcompile_settings)
 # target_link_libraries(port_dummy PUBLIC pszcompile_settings)
 add_library(pszkernel_dp
   src/kernel/spvn.dp.cpp
-  src/kernel/l23_c.dp.cpp
-  src/kernel/l23_x.dp.cpp
-  src/kernel/l23r.dp.cpp
-
-  # # src/kernel/hist.dp.cpp  ## no proper interop
+  src/kernel/lrz_c.dp.cpp
+  src/kernel/lrz_x.dp.cpp
+  # src/kernel/hist.dp.cpp  ## no proper interop
   src/kernel/histsp.dp.cpp
   src/kernel/dryrun.dp.cpp
 )
@@ -99,16 +98,13 @@ add_library(
   src/hf/hfbk_internal.seq.cc src/hf/hfbk.seq.cc src/hf/hfcanon.seq.cc)
 target_link_libraries(pszhfbook_seq PUBLIC pszcompile_settings)
 
-add_library(pszhf_dp src/hf/hfclass.dp.cpp src/hf/hfcodec.dp.cpp)
+add_library(pszhf_dp src/hf/hfclass.dp.cpp src/hf/hf_kernels.dp.cpp)
 target_link_libraries(pszhf_dp PUBLIC pszcompile_settings pszstat_dp
   pszhfbook_seq)
 
 add_library(pszcomp_dp src/compressor.cc)
 target_link_libraries(pszcomp_dp PUBLIC pszcompile_settings pszkernel_dp
   pszstat_dp pszhf_dp pszkernel_seq)
-
-add_library(psztestframe_dp src/pipeline/testframe.cc)
-target_link_libraries(psztestframe_dp PUBLIC pszcomp_dp pszmem pszutils_seq)
 
 add_library(dpsz src/cusz_lib.cc)
 target_link_libraries(dpsz PUBLIC pszcomp_dp pszhf_dp pszspv_dp pszstat_seq
@@ -144,7 +140,6 @@ install(TARGETS pszhfbook_seq EXPORT CUSZTargets LIBRARY DESTINATION ${CMAKE_INS
 
 install(TARGETS pszhf_dp EXPORT CUSZTargets LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS pszcomp_dp EXPORT CUSZTargets LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
-install(TARGETS psztestframe_dp EXPORT CUSZTargets LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS dpsz EXPORT CUSZTargets LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
 install(TARGETS dpsz-bin EXPORT CUSZTargets)
 install(

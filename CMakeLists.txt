@@ -19,7 +19,7 @@ option(BUILD_SHARED_LIBS "prefer shared libaries" ON)
 # log: debug and sanitize
 option(PSZ_LOG_DBG_MODE "enable debugging printing" OFF)
 option(PSZ_LOG_SANITIZE_MODE "enable sanitizing functions" OFF)
-option(PSZLOG_ENABLE_ALL "enable all (debugging, sanitizing)" OFF)
+option(PSZ_LOG_ENABLE_ALL "enable all (debugging, sanitizing)" OFF)
 include(cmake/logging.cmake)
 
 # conditionally enable functionality
