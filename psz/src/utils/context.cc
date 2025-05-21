@@ -24,21 +24,53 @@
 #include "utils/config.hh"
 #include "utils/document.hh"
 #include "utils/format.hh"
+#include "utils/verinfo.h"
 
 namespace cusz {
 
 #if defined(PSZ_USE_CUDA)
+const char* BACKEND_TEXT = "cuSZ-Hi";
 const char* VERSION_TEXT = "2023-09-05 (unstable)";
 const int VERSION = 20230905;
 #elif defined(PSZ_USE_HIP)
+const char* BACKEND_TEXT = "hipSZ";
 const char* VERSION_TEXT = "2023-08-31 (unstable)";
 const int VERSION = 20230831;
 #elif defined(PSZ_USE_1API)
+const char* BACKEND_TEXT = "dpSZ";
 const char* VERSION_TEXT = "2023-09-28 (unstable)";
 const int VERSION = 20230928;
 #endif
 const int COMPATIBILITY = 0;
 }  // namespace cusz
+
+void capi_psz_version() { printf("\n>>> %s build: %s\n", cusz::BACKEND_TEXT, cusz::VERSION_TEXT); }
+
+void capi_psz_versioninfo()
+{
+  capi_psz_version();
+  printf("\ntoolchain:\n");
+  print_CXX_ver();
+  print_NVCC_ver();
+  printf("\ndriver:\n");
+  print_CUDA_driver();
+  print_NVIDIA_driver();
+  printf("\n");
+  CUDA_devices();
+}
+
+void pszctx_print_document(bool full_document);
+void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv);
+void pszctx_parse_length(pszctx* ctx, const char* lenstr);
+void pszctx_parse_length_zyx(pszctx* ctx, const char* lenstr);
+void pszctx_parse_control_string(pszctx* ctx, const char* in_str, bool dbg_print);
+void pszctx_validate(pszctx* ctx);
+void pszctx_load_demo_datasize(pszctx* ctx, void* demodata_name);
+void pszctx_set_report(pszctx* ctx, const char* in_str);
+void pszctx_set_radius(pszctx* ctx, int _);
+// void pszctx_set_huffbyte(pszctx* ctx, int _);
+void pszctx_set_huffchunk(pszctx* ctx, int _);
+void pszctx_set_densityfactor(pszctx* ctx, int _);
 
 void pszctx_set_report(pszctx* ctx, const char* in_str)
 {
@@ -50,23 +82,50 @@ void pszctx_set_report(pszctx* ctx, const char* in_str)
     if (psz_helper::is_kv_pair(o)) {
       auto kv = psz_helper::parse_kv_onoff(o);
 
-      if (kv.first == "cr")
-        ctx->report_cr = kv.second;
-      else if (kv.first == "cr.est")
-        ctx->report_cr_est = kv.second;
+      if (kv.first == "cr") ctx->report_cr = kv.second;
+      // else if (kv.first == "cr.est")
+      //   ctx->report_cr_est = kv.second;
       else if (kv.first == "time")
         ctx->report_time = kv.second;
     }
     else {
-      if (o == "cr")
-        ctx->report_cr = true;
-      else if (o == "cr.est")
-        ctx->report_cr_est = true;
+      if (o == "cr") ctx->report_cr = true;
+      // else if (o == "cr.est")
+      //   ctx->report_cr_est = true;
       else if (o == "time")
         ctx->report_time = true;
     }
   }
 }
+
+#ifdef PSZ_2505_MERGE
+void pszctx_set_datadump(pszctx* ctx, const char* in_str)
+{
+  str_list opts;
+  psz_helper::parse_strlist(in_str, opts);
+
+  for (auto o : opts) {
+    if (psz_helper::is_kv_pair(o)) {
+      auto kv = psz_helper::parse_kv_onoff(o);
+
+      if (kv.first == "quantcode" or kv.first == "quant")
+        ctx->cli->dump_quantcode = kv.second;
+      else if (kv.first == "histogram" or kv.first == "hist")
+        ctx->cli->dump_hist = kv.second;
+      else if (kv.first == "full_huffman_binary" or kv.first == "full_hf")
+        ctx->cli->dump_full_hf = kv.second;
+    }
+    else {
+      if (o == "quantcode" or o == "quant")
+        ctx->cli->dump_quantcode = true;
+      else if (o == "histogram" or o == "hist")
+        ctx->cli->dump_hist = true;
+      else if (o == "full_huffman_binary" or o == "full_hf")
+        ctx->cli->dump_full_hf = true;
+    }
+  }
+}
+#endif
 
 /**
  **  >>> syntax
@@ -77,15 +136,13 @@ void pszctx_set_report(pszctx* ctx, const char* in_str)
  **  "predictor=lorenzo,size=3600x1800"
  **
  **/
-void pszctx_parse_control_string(
-    pszctx* ctx, const char* in_str, bool dbg_print)
+void pszctx_parse_control_string(pszctx* ctx, const char* in_str, bool dbg_print)
 {
   map_t opts;
   psz_helper::parse_strlist_as_kv(in_str, opts);
 
   if (dbg_print) {
-    for (auto kv : opts)
-      printf("%-*s %-s\n", 10, kv.first.c_str(), kv.second.c_str());
+    for (auto kv : opts) printf("%-*s %-s\n", 10, kv.first.c_str(), kv.second.c_str());
     std::cout << "\n";
   }
 
@@ -143,12 +200,21 @@ void pszctx_parse_control_string(
     else if (optmatch({"predictor"})) {
       strcpy(ctx->dbgstr_pred, v.c_str());
 
-      if (v == "spline" or v == "spline3") {
+#ifndef PSZ_2505_MERGE
+      if (v == "spline" or v == "spline3")
         ctx->pred_type = psz_predtype::Spline;
-      }
-      else if (v == "lorenzo") {
+      else if (v == "lorenzo")
         ctx->pred_type = psz_predtype::Lorenzo;
-      }
+#else
+      if (v == "spline" or v == "spline3" or v == "spl")
+        ctx->header->pred_type = psz_predtype::Spline;
+      else if (v == "lorenzo" or v == "lrz")
+        ctx->header->pred_type = psz_predtype::Lorenzo;
+      else if (v == "lorenzo-zigzag" or v == "lrz-zz")
+        ctx->header->pred_type = psz_predtype::LorenzoZigZag;
+      else if (v == "lorenzo-proto" or v == "lrz-proto")
+        ctx->header->pred_type = psz_predtype::LorenzoProto;
+#endif
       else {
         printf(
             "[psz::warning::parser] "
@@ -158,20 +224,28 @@ void pszctx_parse_control_string(
         ctx->pred_type = psz_predtype::Lorenzo;
       }
     }
-    // else if (optmatch({"failfast"}) and is_enabled(v)) {}
-    else if (optmatch({"density"})) {  // refer to `SparseMethodSetup` in
-                                       // `config.hh`
-      ctx->nz_density = psz_helper::str2fp(v);
-      ctx->nz_density_factor = 1 / ctx->nz_density;
+#ifdef PSZ_2505_MERGE
+    else if (optmatch({"hist", "histogram"})) {
+      strcpy(ctx->cli->char_codec1_name, v.c_str());
+
+      if (v == "generic")
+        ctx->header->hist_type = psz_histotype::HistogramGeneric;
+      else if (v == "sparse")
+        ctx->header->hist_type = psz_histotype::HistogramSparse;
     }
-    else if (optmatch({"densityfactor"})) {  // refer to `SparseMethodSetup` in
-                                             // `config.hh`
-      ctx->nz_density_factor = psz_helper::str2fp(v);
-      ctx->nz_density = 1 / ctx->nz_density_factor;
+    else if (optmatch({"codec", "codec1"})) {
+      strcpy(ctx->cli->char_codec1_name, v.c_str());
+
+      if (v == "huffman" or v == "hf")
+        ctx->header->codec1_type = psz_codectype::Huffman;
+      else if (v == "fzgcodec")
+        ctx->header->codec1_type = psz_codectype::FZGPUCodec;
     }
+#endif
     else if (optmatch({"gpuverify"}) and is_enabled(v)) {
       ctx->use_gpu_verify = true;
     }
+    //// start of Hi configs
     else if (optmatch({"auto_tuning"})) {
       // ctx->intp_param.auto_tuning = psz_helper::str2int(v);
       if (v == "cr-first") { ctx->intp_param.auto_tuning = 3; }
@@ -180,8 +254,7 @@ void pszctx_parse_control_string(
       }
       else {
         try {
-          ctx->intp_param.auto_tuning =
-              static_cast<uint8_t>(psz_helper::str2int(v));
+          ctx->intp_param.auto_tuning = static_cast<uint8_t>(psz_helper::str2int(v));
         }
         catch (...) {
           std::cerr << "[Error] Invalid auto_tuning value: " << v
@@ -233,6 +306,7 @@ void pszctx_parse_control_string(
     else if (optmatch({"rev_3"})) {
       ctx->intp_param.reverse[3] = psz_helper::str2int(v);
     }
+    //// end of Hi config
   }
 }
 
@@ -257,8 +331,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
   int i = 1;
 
   auto check_next = [&]() {
-    if (i + 1 >= argc)
-      throw std::runtime_error("out-of-range at" + std::string(argv[i]));
+    if (i + 1 >= argc) throw std::runtime_error("out-of-range at" + std::string(argv[i]));
   };
 
   std::string opt;
@@ -283,7 +356,11 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         exit(0);
       }
       else if (optmatch({"-v", "--version"})) {
-        std::cout << ">>>  psz/cusz build: " << cusz::VERSION_TEXT << "\n";
+        capi_psz_version();
+        exit(0);
+      }
+      else if (optmatch({"-V", "--versioninfo", "--query-env"})) {
+        capi_psz_versioninfo();
         exit(0);
       }
       else if (optmatch({"-m", "--mode"})) {
@@ -302,9 +379,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         auto v = std::string(argv[++i]);
         strcpy(ctx->dbgstr_pred, v.c_str());
 
-        if (v == "spline" or v == "spline3") {
-          ctx->pred_type = psz_predtype::Spline;
-        }
+        if (v == "spline" or v == "spline3") { ctx->pred_type = psz_predtype::Spline; }
         else if (v == "lorenzo") {
           ctx->pred_type = psz_predtype::Lorenzo;
         }
@@ -350,9 +425,7 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
       else if (optmatch({"-P", "--pre", "--preprocess"})) {
         check_next();
         std::string pre(argv[++i]);
-        if (pre.find("binning") != std::string::npos) {
-          ctx->prep_binning = true;
-        }
+        if (pre.find("binning") != std::string::npos) { ctx->prep_binning = true; }
       }
       else if (optmatch({"-V", "--verbose"})) {
         ctx->verbose = true;
@@ -368,17 +441,12 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
       else if (optmatch({"-S", "-X", "--skip", "--exclude"})) {
         check_next();
         std::string exclude(argv[++i]);
-        if (exclude.find("huffman") != std::string::npos) {
-          ctx->skip_hf = true;
-        }
-        if (exclude.find("write2disk") != std::string::npos) {
-          ctx->skip_tofile = true;
-        }
+        if (exclude.find("huffman") != std::string::npos) { ctx->skip_hf = true; }
+        if (exclude.find("write2disk") != std::string::npos) { ctx->skip_tofile = true; }
       }
       else if (optmatch({"--opath"})) {
         check_next();
-        throw std::runtime_error(
-            "[23june] Specifying output path is temporarily disabled.");
+        throw std::runtime_error("[23june] Specifying output path is temporarily disabled.");
         auto _ = std::string(argv[++i]);
         strcpy(ctx->opath, _.c_str());
       }
@@ -398,13 +466,11 @@ void pszctx_parse_argv(pszctx* ctx, int const argc, char** const argv)
         }
         else {
           try {
-            ctx->intp_param.auto_tuning =
-                static_cast<uint8_t>(std::stoi(mode));
+            ctx->intp_param.auto_tuning = static_cast<uint8_t>(std::stoi(mode));
           }
           catch (...) {
-            std::cerr
-                << "[Error] Unknown auto-tuning mode: " << mode
-                << ". Supported: cr-first, rd-first, or an integer value.\n";
+            std::cerr << "[Error] Unknown auto-tuning mode: " << mode
+                      << ". Supported: cr-first, rd-first, or an integer value.\n";
             exit(1);
           }
         }
@@ -488,17 +554,17 @@ void pszctx_load_demo_datasize(pszctx* ctx, void* name)
 
   if (not demodata_name.empty()) {
     auto f = dataset_entries.find(demodata_name);
-    if (f == dataset_entries.end())
-      throw std::runtime_error("no such dataset as" + demodata_name);
+    if (f == dataset_entries.end()) throw std::runtime_error("no such dataset as" + demodata_name);
     auto demo_xyzw = f->second;
 
-    ctx->x = demo_xyzw[0], ctx->y = demo_xyzw[1], ctx->z = demo_xyzw[2],
-    ctx->w = demo_xyzw[3], ctx->ndim = demo_xyzw[4];
+    ctx->x = demo_xyzw[0], ctx->y = demo_xyzw[1], ctx->z = demo_xyzw[2], ctx->w = demo_xyzw[3],
+    ctx->ndim = demo_xyzw[4];
 
     ctx->data_len = ctx->x * ctx->y * ctx->z * ctx->w;
   }
 }
 
+#ifndef PSZ_2505_MERGE
 void pszctx_parse_length(pszctx* ctx, const char* lenstr)
 {
   std::vector<std::string> dims;
@@ -511,7 +577,22 @@ void pszctx_parse_length(pszctx* ctx, const char* lenstr)
   if (ctx->ndim >= 4) ctx->w = psz_helper::str2int(dims[3]);
   ctx->data_len = ctx->x * ctx->y * ctx->z * ctx->w;
 }
+#else
+void pszctx_parse_length(pszctx* ctx, const char* lenstr)
+{
+  std::vector<std::string> dims;
+  psz_utils::parse_length_literal(lenstr, dims);
+  ctx->ndim = dims.size();
+  ctx->header->y = ctx->header->z = ctx->header->w = 1;
+  ctx->header->x = psz_helper::str2int(dims[0]);
+  if (ctx->ndim >= 2) ctx->header->y = psz_helper::str2int(dims[1]);
+  if (ctx->ndim >= 3) ctx->header->z = psz_helper::str2int(dims[2]);
+  if (ctx->ndim >= 4) ctx->header->w = psz_helper::str2int(dims[3]);
+  ctx->data_len = ctx->header->x * ctx->header->y * ctx->header->z * ctx->header->w;
+}
+#endif
 
+#ifndef PSZ_2505_MERGE
 void pszctx_parse_length_zyx(pszctx* ctx, const char* lenstr)
 {
   std::vector<std::string> dims;
@@ -524,7 +605,22 @@ void pszctx_parse_length_zyx(pszctx* ctx, const char* lenstr)
   if (ctx->ndim >= 4) ctx->w = psz_helper::str2int(dims[ctx->ndim - 4]);
   ctx->data_len = ctx->x * ctx->y * ctx->z * ctx->w;
 }
+#else
+void pszctx_parse_length_zyx(pszctx* ctx, const char* lenstr)
+{
+  std::vector<std::string> dims;
+  psz_utils::parse_length_literal(lenstr, dims);
+  ctx->ndim = dims.size();
+  ctx->header->y = ctx->header->z = ctx->header->w = 1;
+  ctx->header->x = psz_helper::str2int(dims[ctx->ndim - 1]);
+  if (ctx->ndim >= 2) ctx->header->y = psz_helper::str2int(dims[ctx->ndim - 2]);
+  if (ctx->ndim >= 3) ctx->header->z = psz_helper::str2int(dims[ctx->ndim - 3]);
+  if (ctx->ndim >= 4) ctx->header->w = psz_helper::str2int(dims[ctx->ndim - 4]);
+  ctx->data_len = ctx->header->x * ctx->header->y * ctx->header->z * ctx->header->w;
+}
+#endif
 
+#ifndef PSZ_2505_MERGE
 void pszctx_validate(pszctx* ctx)
 {
   bool to_abort = false;
@@ -540,10 +636,8 @@ void pszctx_validate(pszctx* ctx)
       to_abort = true;
     }
   }
-  if (not ctx->task_construct and not ctx->task_reconstruct and
-      not ctx->task_dryrun) {
-    cerr << LOG_ERR << "select compress (-z), decompress (-x) or dryrun (-r)"
-         << endl;
+  if (not ctx->task_construct and not ctx->task_reconstruct and not ctx->task_dryrun) {
+    cerr << LOG_ERR << "select compress (-z), decompress (-x) or dryrun (-r)" << endl;
     to_abort = true;
   }
   if (false == psz_utils::check_dtype(ctx->dtype)) {
@@ -553,27 +647,19 @@ void pszctx_validate(pszctx* ctx)
       to_abort = true;
     }
   }
-  // if (quant_bytewidth == 1)
-  //     assert(dict_size <= 256);
-  // else if (quant_bytewidth == 2)
-  //     assert(dict_size <= 65536);
   if (ctx->task_dryrun and ctx->task_construct and ctx->task_reconstruct) {
-    cerr << LOG_WARN
-         << "no need to dryrun, compress and decompress at the same time"
-         << endl;
+    cerr << LOG_WARN << "no need to dryrun, compress and decompress at the same time" << endl;
     cerr << LOG_WARN << "dryrun only" << endl << endl;
     ctx->task_construct = false;
     ctx->task_reconstruct = false;
   }
   else if (ctx->task_dryrun and ctx->task_construct) {
-    cerr << LOG_WARN << "no need to dryrun and compress at the same time"
-         << endl;
+    cerr << LOG_WARN << "no need to dryrun and compress at the same time" << endl;
     cerr << LOG_WARN << "dryrun only" << endl << endl;
     ctx->task_construct = false;
   }
   else if (ctx->task_dryrun and ctx->task_reconstruct) {
-    cerr << LOG_WARN << "no need to dryrun and decompress at the same time"
-         << endl;
+    cerr << LOG_WARN << "no need to dryrun and decompress at the same time" << endl;
     cerr << LOG_WARN << "will dryrun only" << endl << endl;
     ctx->task_reconstruct = false;
   }
@@ -583,28 +669,58 @@ void pszctx_validate(pszctx* ctx)
     exit(-1);
   }
 }
+#else
+void pszctx_validate(pszctx* ctx)
+{
+  bool to_abort = false;
+  // if (ctx->cli->file_input.empty()) {
+  if (ctx->cli->file_input[0] == '\0') {
+    cerr << LOG_ERR << "must specify input file" << endl;
+    to_abort = true;
+  }
 
-// pszctx::pszctx(int argc, char** const argv)
-// {
-//     pszctx_parse_argv(this, argc, argv);
-//     pszctx_validate(this);
-// }
+  if (not ctx->cli->task_construct and not ctx->cli->task_reconstruct) {
+    cerr << LOG_ERR << "select compress (-z) or decompress (-x)." << endl;
+    to_abort = true;
+  }
+  if (false == psz_utils::check_dtype(ctx->header->dtype)) {
+    if (ctx->cli->task_construct) {
+      std::cout << ctx->header->dtype << endl;
+      cerr << LOG_ERR << "must specify data type" << endl;
+      to_abort = true;
+    }
+  }
 
-// pszctx::pszctx(const char* in_str, bool dbg_print) {
-// pszctx_set_field_from_str(this, in_str, dbg_print);
-// }
+  if (to_abort) {
+    pszctx_print_document(false);
+    exit(-1);
+  }
+}
+#endif
 
+#ifndef PSZ_2505_MERGE
 void pszctx_print_document(bool full_document)
 {
-  // std::cout << "\n>>>>  cuszi build: ICDE '24 artifacts\n";
-
   if (full_document)
-    // std::cout << psz_helper::doc_format(psz_full_doc) << std::endl;
     std::cout << "Full document is disabled temporarily." << std::endl;
   else
     std::cout << psz_short_doc << std::endl;
 }
+#else
+void pszctx_print_document(bool full_document)
+{
+  if (full_document) {
+    capi_psz_version();
+    std::cout << "\n" << psz_helper::doc_format(psz_full_doc);
+  }
+  else {
+    capi_psz_version();
+    std::cout << psz_helper::doc_format(psz_short_doc);
+  }
+}
+#endif
 
+#ifndef PSZ_2505_MERGE
 void pszctx_set_rawlen(pszctx* ctx, size_t _x, size_t _y, size_t _z, size_t _w)
 {
   ctx->x = _x, ctx->y = _y, ctx->z = _z, ctx->w = _w;
@@ -617,16 +733,39 @@ void pszctx_set_rawlen(pszctx* ctx, size_t _x, size_t _y, size_t _z, size_t _w)
   ctx->ndim = ndim;
   ctx->data_len = ctx->x * ctx->y * ctx->z * ctx->w;
 
-  if (ctx->data_len == 1)
-    throw std::runtime_error("Input data length cannot be 1 (linearized).");
-  if (ctx->data_len == 0)
-    throw std::runtime_error("Input data length cannot be 0 (linearized).");
+  if (ctx->data_len == 1) throw std::runtime_error("Input data length cannot be 1 (linearized).");
+  if (ctx->data_len == 0) throw std::runtime_error("Input data length cannot be 0 (linearized).");
 }
-
-void pszctx_set_len(pszctx* ctx, pszlen len)
+#else
+void pszctx_set_rawlen(pszctx* ctx, size_t _x, size_t _y, size_t _z)
 {
-  pszctx_set_rawlen(ctx, len.x, len.y, len.z, len.w);
+  ctx->header->x = _x, ctx->header->y = _y, ctx->header->z = _z;
+
+  auto ndim = 4;
+  if (ctx->header->w == 1) ctx->ndim = 3;
+  if (ctx->header->z == 1) ndim = 2;
+  if (ctx->header->y == 1) ndim = 1;
+
+  ctx->ndim = ndim;
+  ctx->data_len = ctx->header->x * ctx->header->y * ctx->header->z;
+
+  if (ctx->data_len == 1) throw std::runtime_error("Input data length cannot be 1 (linearized).");
+  if (ctx->data_len == 0) throw std::runtime_error("Input data length cannot be 0 (linearized).");
 }
+#endif
+
+#ifndef PSZ_2505_MERGE
+void pszctx_set_len(pszctx* ctx, pszlen l) { pszctx_set_rawlen(ctx, l.x, l.y, l.z, l.w); }
+#else
+void pszctx_set_len(pszctx* ctx, psz_len3 len) { pszctx_set_rawlen(ctx, len.x, len.y, len.z); }
+#endif
+
+#ifdef PSZ_2505_MERGE
+psz_len3 pszctx_get_len3(pszctx* ctx)
+{
+  return psz_len3{ctx->header->x, ctx->header->y, ctx->header->z};
+}
+#endif
 
 void pszctx_set_radius(pszctx* ctx, int _)
 {
@@ -634,26 +773,92 @@ void pszctx_set_radius(pszctx* ctx, int _)
   ctx->dict_size = ctx->radius * 2;
 }
 
-void pszctx_set_huffbyte(pszctx* ctx, int _)
+#ifdef PSZ_2505_MERGE
+
+psz_len3 pszctx_get_len3(pszctx* ctx)
 {
-  ctx->huff_bytewidth = _;
-  // ctx->codecs_in_use  = codec_force_fallback() ? 0b11 /*use both*/ : 0b01
-  // /*use 4-byte*/;
+  return psz_len3{ctx->header->x, ctx->header->y, ctx->header->z};
 }
 
-void pszctx_set_huffchunk(pszctx* ctx, int _)
+void pszctx_set_radius(pszctx* ctx, int _)
 {
-  ctx->vle_sublen = _;
-  ctx->use_autotune_hf = false;
+  ctx->header->radius = _;
+  ctx->dict_size = ctx->header->radius * 2;
 }
 
-void pszctx_set_densityfactor(pszctx* ctx, int _)
+pszctx* pszctx_default_values()
 {
-  if (_ <= 1)
-    throw std::runtime_error(
-        "Density factor for Spcodec must be >1. For example, setting the "
-        "factor as 4 indicates the density "
-        "(the portion of nonzeros) is 25% in an array.");
-  ctx->nz_density_factor = _;
-  ctx->nz_density = 1.0 / _;
+  return new pszctx{
+      .header =
+          new psz_header{
+              .dtype = F4,
+              .pred_type = DEFAULT_PREDICTOR,
+              .hist_type = DEFAULT_HISTOGRAM,
+              .codec1_type = DEFAULT_CODEC,
+              .mode = Rel,
+              .eb = 0.1,
+              .radius = 512,
+              .vle_sublen = 512,
+              .vle_pardeg = -1,
+              .x = 1,
+              .y = 1,
+              .z = 1,
+              .w = 1,
+              .splen = 0,
+          },
+      .cli =
+          new psz_cli_config{
+              .dump_quantcode = false,
+              .dump_hist = false,
+              .task_construct = false,
+              .task_reconstruct = false,
+              .rel_range_scan = false,
+              .use_gpu_verify = false,
+              .skip_tofile = false,
+              .skip_hf = false,
+              .report_time = false,
+              .report_cr = false,
+              .verbose = false,
+          },
+      .dict_size = 1024,
+      .data_len = 1,
+      .ndim = -1,
+      .there_is_memerr = false,
+  };
 }
+
+void pszctx_set_default_values(pszctx* empty_ctx)
+{
+  auto default_vals = pszctx_default_values();
+  memcpy(empty_ctx, default_vals, sizeof(pszctx));
+  delete default_vals;
+}
+
+pszctx* pszctx_minimal_workset(
+    psz_dtype const dtype, psz_predtype const predictor, int const quantizer_radius,
+    psz_codectype const codec)
+{
+  auto ws = pszctx_default_values();
+  ws->header->dtype = dtype;
+  ws->header->pred_type = predictor;
+  ws->header->codec1_type = codec;
+  ws->dict_size = quantizer_radius * 2;
+  ws->header->radius = quantizer_radius;
+  return ws;
+}
+
+unsigned int CLI_x(psz_arguments* args) { return args->header->x; }
+unsigned int CLI_y(psz_arguments* args) { return args->header->y; }
+unsigned int CLI_z(psz_arguments* args) { return args->header->z; }
+unsigned int CLI_w(psz_arguments* args) { return args->header->w; }
+unsigned short CLI_radius(psz_arguments* args) { return args->header->radius; }
+unsigned short CLI_bklen(psz_arguments* args) { return args->header->radius * 2; }
+psz_dtype CLI_dtype(psz_arguments* args) { return args->header->dtype; }
+psz_predtype CLI_predictor(psz_arguments* args) { return args->header->pred_type; }
+psz_histotype CLI_hist(psz_arguments* args) { return args->header->hist_type; }
+psz_codectype CLI_codec1(psz_arguments* args) { return args->header->codec1_type; }
+psz_codectype CLI_codec2(psz_arguments* args) { return args->header->_future_codec2_type; }
+psz_mode CLI_mode(psz_arguments* args) { return args->header->mode; }
+double CLI_eb(psz_arguments* args) { return args->header->eb; }
+
+#endif

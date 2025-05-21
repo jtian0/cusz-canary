@@ -24,6 +24,12 @@ extern "C" {
 #include <stdint.h>
 #include <stdlib.h>
 
+#define PSZHEADER_HEADER 0
+#define PSZHEADER_ANCHOR 1
+#define PSZHEADER_ENCODED 2
+#define PSZHEADER_SPFMT 3
+#define PSZHEADER_END 4
+
 typedef struct alignas(128) psz_header {
   static const int HEADER = 0;
   static const int VLE = 1;
@@ -44,15 +50,14 @@ typedef struct alignas(128) psz_header {
   uint32_t radius : 16;
   int splen;
 
-  uint32_t entry[END + 2];
+  uint32_t entry[PSZHEADER_END + 2];
 
   psz_predtype pred_type;
 
   // uint32_t byte_uncomp : 4;   // T; 1, 2, 4, 8
   // uint32_t byte_errctrl : 3;  // 1, 2, 4
   // uint32_t byte_meta : 4;     // 4, 8
-  
-  
+
   INTERPOLATION_PARAMS intp_param;
 } psz_header;
 typedef psz_header pszheader;

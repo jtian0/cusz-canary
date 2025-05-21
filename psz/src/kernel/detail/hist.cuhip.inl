@@ -19,7 +19,6 @@
 #include <limits>
 
 #include "detail/typing.hh"
-#include "utils/config.hh"
 #include "utils/timer.hh"
 
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
@@ -38,8 +37,7 @@ const static unsigned int WARP_SIZE = 32;
 namespace kernel {
 
 template <typename Input>
-__global__ void NaiveHistogram(
-    Input in_data[], int out_freq[], int N, int symbols_per_thread);
+__global__ void NaiveHistogram(Input in_data[], int out_freq[], int N, int symbols_per_thread);
 
 /* Copied from J. Gomez-Luna et al */
 template <typename T, typename FREQ>
@@ -48,8 +46,7 @@ __global__ void p2013Histogram(T*, FREQ*, size_t, int, int);
 }  // namespace kernel
 
 template <typename T>
-__global__ void kernel::NaiveHistogram(
-    T in_data[], int out_freq[], int N, int symbols_per_thread)
+__global__ void kernel::NaiveHistogram(T in_data[], int out_freq[], int N, int symbols_per_thread)
 {
   unsigned int i = blockDim.x * blockIdx.x + threadIdx.x;
   unsigned int j;
@@ -64,8 +61,7 @@ __global__ void kernel::NaiveHistogram(
 }
 
 template <typename T, typename FREQ>
-__global__ void kernel::p2013Histogram(
-    T* in_data, FREQ* out_freq, size_t N, int nbin, int R)
+__global__ void kernel::p2013Histogram(T* in_data, FREQ* out_freq, size_t N, int nbin, int R)
 {
   // static_assert(
   //     std::numeric_limits<T>::is_integer and (not
@@ -78,8 +74,7 @@ __global__ void kernel::p2013Histogram(
   const unsigned int lane = tix % WARP_SIZE;
   const unsigned int warps_block = bdx / WARP_SIZE;
   const unsigned int off_rep = (nbin + 1) * (tix % R);
-  const unsigned int begin =
-      (N / warps_block) * warp_id + WARP_SIZE * blockIdx.x + lane;
+  const unsigned int begin = (N / warps_block) * warp_id + WARP_SIZE * blockIdx.x + lane;
   unsigned int end = (N / warps_block) * (warp_id + 1);
   const unsigned int step = WARP_SIZE * gridDim.x;
 
@@ -98,9 +93,7 @@ __global__ void kernel::p2013Histogram(
 
   for (unsigned int pos = tix; pos < nbin; pos += bdx) {
     int sum = 0;
-    for (int base = 0; base < (nbin + 1) * R; base += nbin + 1) {
-      sum += Hs[base + pos];
-    }
+    for (int base = 0; base < (nbin + 1) * R; base += nbin + 1) { sum += Hs[base + pos]; }
     atomicAdd(out_freq + pos, sum);
   }
 }
@@ -110,8 +103,8 @@ namespace cu_hip {
 
 template <typename T>
 psz_error_status hist_default(
-    T* in, size_t const inlen, uint32_t* out_hist, int const outlen,
-    float* milliseconds, cudaStream_t stream)
+    T* in, size_t const inlen, uint32_t* out_hist, int const outlen, float* milliseconds,
+    cudaStream_t stream)
 {
   int device_id, max_bytes, num_SMs;
   int items_per_thread, r_per_block, grid_dim, block_dim, shmem_use;
@@ -121,19 +114,16 @@ psz_error_status hist_default(
 
   auto query_maxbytes = [&]() {
     int max_bytes_opt_in;
-    cudaDeviceGetAttribute(
-        &max_bytes, cudaDevAttrMaxSharedMemoryPerBlock, device_id);
+    cudaDeviceGetAttribute(&max_bytes, cudaDevAttrMaxSharedMemoryPerBlock, device_id);
 
     // account for opt-in extra shared memory on certain architectures
-    cudaDeviceGetAttribute(
-        &max_bytes_opt_in, cudaDevAttrMaxSharedMemoryPerBlockOptin, device_id);
+    cudaDeviceGetAttribute(&max_bytes_opt_in, cudaDevAttrMaxSharedMemoryPerBlockOptin, device_id);
     max_bytes = std::max(max_bytes, max_bytes_opt_in);
 
     // config kernel attribute
     cudaFuncSetAttribute(
         (void*)kernel::p2013Histogram<T, uint32_t>,
-        (cudaFuncAttribute)cudaFuncAttributeMaxDynamicSharedMemorySize,
-        max_bytes);
+        (cudaFuncAttribute)cudaFuncAttributeMaxDynamicSharedMemorySize, max_bytes);
   };
 
   auto optimize_launch = [&]() {
@@ -141,15 +131,13 @@ psz_error_status hist_default(
     r_per_block = (max_bytes / sizeof(int)) / (outlen + 1);
     grid_dim = num_SMs;
     // fits to size
-    block_dim =
-        ((((inlen / (grid_dim * items_per_thread)) + 1) / 64) + 1) * 64;
+    block_dim = ((((inlen / (grid_dim * items_per_thread)) + 1) / 64) + 1) * 64;
     while (block_dim > 1024) {
       if (r_per_block <= 1) { block_dim = 1024; }
       else {
         r_per_block /= 2;
         grid_dim *= 2;
-        block_dim =
-            ((((inlen / (grid_dim * items_per_thread)) + 1) / 64) + 1) * 64;
+        block_dim = ((((inlen / (grid_dim * items_per_thread)) + 1) / 64) + 1) * 64;
       }
     }
     shmem_use = ((outlen + 1) * r_per_block) * sizeof(int);

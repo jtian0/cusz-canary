@@ -35,11 +35,9 @@ int CompressorHelper::autotune_coarse_parhf(psz_context* ctx)
 
     auto nSM = dev_prop.multiProcessorCount;
     auto allowed_block_dim = dev_prop.maxThreadsPerBlock;
-    auto deflate_nthread =
-        allowed_block_dim * nSM / HuffmanHelper::DEFLATE_CONSTANT;
+    auto deflate_nthread = allowed_block_dim * nSM / HuffmanHelper::DEFLATE_CONSTANT;
     auto optimal_sublen = psz_utils::get_npart(len, deflate_nthread);
-    optimal_sublen = psz_utils::get_npart(
-                         optimal_sublen, HuffmanHelper::BLOCK_DIM_DEFLATE) *
+    optimal_sublen = psz_utils::get_npart(optimal_sublen, HuffmanHelper::BLOCK_DIM_DEFLATE) *
                      HuffmanHelper::BLOCK_DIM_DEFLATE;
 
     return optimal_sublen;
@@ -68,21 +66,17 @@ try {
     */
     dpct::select_device(current_dev);
     dpct::device_info dev_prop{};
-    dpct::dev_mgr::instance()
-        .get_device(current_dev)
-        .get_device_info(dev_prop);
+    dpct::dev_mgr::instance().get_device(current_dev).get_device_info(dev_prop);
 
     auto nEU = dev_prop.get_max_compute_units();
     auto allowed_block_dim = dev_prop.get_max_work_group_size();
-    auto deflate_nthread =
-        allowed_block_dim * nEU / HuffmanHelper::DEFLATE_CONSTANT;
+    auto deflate_nthread = allowed_block_dim * nEU / HuffmanHelper::DEFLATE_CONSTANT;
     // Simple EU-SM conversion
     deflate_nthread /= 16;
     // SImple testing
     deflate_nthread /= 16;
     auto optimal_sublen = psz_utils::get_npart(len, deflate_nthread);
-    optimal_sublen = psz_utils::get_npart(
-                         optimal_sublen, HuffmanHelper::BLOCK_DIM_DEFLATE) *
+    optimal_sublen = psz_utils::get_npart(optimal_sublen, HuffmanHelper::BLOCK_DIM_DEFLATE) *
                      HuffmanHelper::BLOCK_DIM_DEFLATE;
 
     return optimal_sublen;
@@ -102,8 +96,8 @@ try {
   return ctx->vle_pardeg;
 }
 catch (sycl::exception const& exc) {
-  std::cerr << exc.what() << "Exception caught at file:" << __FILE__
-            << ", line:" << __LINE__ << std::endl;
+  std::cerr << exc.what() << "Exception caught at file:" << __FILE__ << ", line:" << __LINE__
+            << std::endl;
   std::exit(1);
 }
 

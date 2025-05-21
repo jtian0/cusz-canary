@@ -36,20 +36,29 @@ pszcompressor* psz_create(pszframe* framework, psz_dtype const type);
 
 pszerror psz_release(pszcompressor* comp);
 
-pszerror psz_compress_init(
-    pszcompressor* comp, pszlen const uncomp_len, pszctx* ctx);
+pszerror psz_compress_init(pszcompressor* comp, pszlen const uncomp_len, pszctx* ctx);
 
 pszerror psz_compress(
-    pszcompressor* comp, void* uncompressed, pszlen const uncomp_len,
-    ptr_pszout compressed, size_t* comp_bytes, pszheader* header, void* record,
-    void* stream);
+    pszcompressor* comp, void* uncompressed, pszlen const uncomp_len, ptr_pszout compressed,
+    size_t* comp_bytes, pszheader* header, void* record, void* stream);
 
 pszerror psz_decompress_init(pszcompressor* comp, pszheader* header);
 
 pszerror psz_decompress(
-    pszcompressor* comp, pszout compressed, size_t const comp_len,
-    void* decompressed, void* outlier_tmp, pszlen const decomp_len,
-    void* record, void* stream);
+    pszcompressor* comp, pszout compressed, size_t const comp_len, void* decompressed,
+    void* outlier_tmp, pszlen const decomp_len, void* record, void* stream);
+
+////////////////////////////////////////////////////////////////////////////////
+// start of 2505 merge /////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+
+// defined in context.cc
+extern void capi_psz_version();
+extern void capi_psz_versioninfo();
+
+////////////////////////////////////////////////////////////////////////////////
+// end of 2505 merge ///////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 
 #endif
 

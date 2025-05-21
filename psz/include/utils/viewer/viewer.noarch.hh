@@ -1,24 +1,23 @@
 #ifndef B166AEEB_917A_448A_91F6_D0F7A186A36A
 #define B166AEEB_917A_448A_91F6_D0F7A186A36A
 
+#include "utils/config.hh"
+
 namespace psz {
 
 template <typename T>
 static void print_metrics_cross(
     pszsummary* s, size_t compressed_bytes = 0, bool gpu_checker = false)
 {
-  auto checker = (not gpu_checker) ? string("(using CPU checker)")
-                                   : string("(using GPU checker)");
+  auto checker = (not gpu_checker) ? string("(using CPU checker)") : string("(using GPU checker)");
   auto bytes = (s->len * sizeof(T) * 1.0);
 
-  auto println = [](const char* s, double n1, double n2, double n3,
-                    double n4) {
+  auto println = [](const char* s, double n1, double n2, double n3, double n4) {
     printf("  %-10s %16.8g %16.8g %16.8g %16.8g\n", s, n1, n2, n3, n4);
   };
-  auto printhead = [](const char* s1, const char* s2, const char* s3,
-                      const char* s4, const char* s5) {
-    printf(
-        "  \e[1m\e[31m%-10s %16s %16s %16s %16s\e[0m\n", s1, s2, s3, s4, s5);
+  auto printhead = [](const char* s1, const char* s2, const char* s3, const char* s4,
+                      const char* s5) {
+    printf("  \e[1m\e[31m%-10s %16s %16s %16s %16s\e[0m\n", s1, s2, s3, s4, s5);
   };
 
   auto is_fp = std::is_same<T, float>::value or std::is_same<T, double>::value
@@ -34,24 +33,19 @@ static void print_metrics_cross(
   println("eb-lossy", s->xdata.min, s->xdata.max, s->xdata.rng, s->xdata.std);
 
   printhead("", "abs-val", "abs-idx", "pw-rel", "VS-RNG");
-  println(
-      "max-error", s->max_err.abs, s->max_err.idx, s->max_err.pwrrel,
-      s->max_err.rel);
+  println("max-error", s->max_err.abs, s->max_err.idx, s->max_err.pwrrel, s->max_err.rel);
 
   printhead("", "CR", "NRMSE", "cross-cor", "PSNR");
-  println(
-      "metrics", bytes / compressed_bytes, s->score.NRMSE, s->score.coeff,
-      s->score.PSNR);
+  println("metrics", bytes / compressed_bytes, s->score.NRMSE, s->score.coeff, s->score.PSNR);
 
   // printf("\n");
 };
 
 static void print_metrics_auto(double* lag1_cor, double* lag2_cor)
 {
-  auto printhead = [](const char* s1, const char* s2, const char* s3,
-                      const char* s4, const char* s5) {
-    printf(
-        "  \e[1m\e[31m%-10s %16s %16s %16s %16s\e[0m\n", s1, s2, s3, s4, s5);
+  auto printhead = [](const char* s1, const char* s2, const char* s3, const char* s4,
+                      const char* s5) {
+    printf("  \e[1m\e[31m%-10s %16s %16s %16s %16s\e[0m\n", s1, s2, s3, s4, s5);
   };
 
   printhead("", "lag1-cor", "lag2-cor", "", "");
@@ -96,21 +90,18 @@ struct TimeRecordViewer {
   static double get_total_time(timerecord_t r)
   {
     double total = 0.0;
-    std::for_each(r->begin(), r->end(), [&](TimeRecordTuple t) {
-      return total += std::get<1>(t);
-    });
+    std::for_each(
+        r->begin(), r->end(), [&](TimeRecordTuple t) { return total += std::get<1>(t); });
     return total;
   }
 
-  static void view_compression(
-      timerecord_t r, size_t bytes, size_t compressed_bytes = 0)
+  static void view_compression(timerecord_t r, size_t bytes, size_t compressed_bytes = 0)
   {
-// #warning \
+    // #warning \
 //     "[TODO] view_compression is deprecated, use review_compression(...) instead"
     auto report_cr = [&]() {
       auto cr = 1.0 * bytes / compressed_bytes;
-      if (compressed_bytes != 0)
-        printf("  %-*s %.2f\n", 20, "compression ratio", cr);
+      if (compressed_bytes != 0) printf("  %-*s %.2f\n", 20, "compression ratio", cr);
     };
 
     TimeRecord reflow;
@@ -142,8 +133,7 @@ struct TimeRecordViewer {
     report_cr();
 
     psz_utils::println_throughput_tablehead();
-    for (auto& i : reflow)
-      psz_utils::println_throughput(std::get<0>(i), std::get<1>(i), bytes);
+    for (auto& i : reflow) psz_utils::println_throughput(std::get<0>(i), std::get<1>(i), bytes);
 
     printf("\n");
   }
@@ -162,9 +152,7 @@ struct TimeRecordViewer {
 
     auto sizeof_T = [&]() { return (h->dtype == F4 ? 4 : 8); };
     auto uncomp_bytes = h->x * h->y * h->z * sizeof_T();
-    auto fieldsize = [&](auto FIELD) {
-      return h->entry[FIELD + 1] - h->entry[FIELD];
-    };
+    auto fieldsize = [&](auto FIELD) { return h->entry[FIELD + 1] - h->entry[FIELD]; };
     auto __print = [&](auto str, auto num) {
       cout << "  ";
       cout << std::left;
@@ -180,8 +168,7 @@ struct TimeRecordViewer {
       cout << std::setw(28) << str;
       cout << std::right;
       cout << std::setw(10) << num;
-      cout << std::setw(10) << std::setprecision(3) << std::fixed << perc
-           << "%\n";
+      cout << std::setw(10) << std::setprecision(3) << std::fixed << perc << "%\n";
     };
     auto __newline = []() { cout << '\n'; };
 
@@ -202,17 +189,21 @@ struct TimeRecordViewer {
     printf("  ------------------------\n");
     __print_perc("compressed::HEADER::bytes", sizeof(pszheader));
     if (h->with_huffman) {
-      __print_perc("compressed::VLE+ANCHOR+SPFMT::bytes", h->entry[pszheader::END+1] - h->entry[pszheader::VLE]);
+      __print_perc(
+          "compressed::VLE+ANCHOR+SPFMT::bytes",
+          h->entry[pszheader::END + 1] - h->entry[pszheader::VLE]);
     }
-    else{
+    else {
       __print_perc("compressed::VLE::bytes", fieldsize(pszheader::VLE));
-      __print_perc("compressed::ANCHOR+SPFMT::bytes", h->entry[pszheader::END+1] - h->entry[pszheader::ANCHOR]);
+      __print_perc(
+          "compressed::ANCHOR+SPFMT::bytes",
+          h->entry[pszheader::END + 1] - h->entry[pszheader::ANCHOR]);
     }
     __newline();
+    __print("uncompressed::ANCHOR:::len", fieldsize(pszheader::ANCHOR) / sizeof_T());
     __print(
-        "uncompressed::ANCHOR:::len", fieldsize(pszheader::ANCHOR) / sizeof_T());
-    __print(
-        "uncompressed::SPFMT:::len", fieldsize(pszheader::SPFMT) / (sizeof_T() + sizeof(uint32_t)));
+        "uncompressed::SPFMT:::len",
+        fieldsize(pszheader::SPFMT) / (sizeof_T() + sizeof(uint32_t)));
   }
 
   static void view_timerecord(timerecord_t r, pszheader* h)
@@ -222,13 +213,10 @@ struct TimeRecordViewer {
 
     TimeRecord reflow;
 
-    {  
-      
+    {
       auto total_time = get_total_time(r);
 
-      for (auto& i : *r) {
-        reflow.push_back(i);
-      }
+      for (auto& i : *r) { reflow.push_back(i); }
 
       reflow.push_back({const_cast<const char*>("(total)"), total_time});
       printf("\e[0m");
@@ -236,8 +224,7 @@ struct TimeRecordViewer {
 
     psz_utils::println_throughput_tablehead();
     for (auto& i : reflow)
-      psz_utils::println_throughput(
-          std::get<0>(i), std::get<1>(i), uncomp_bytes);
+      psz_utils::println_throughput(std::get<0>(i), std::get<1>(i), uncomp_bytes);
 
     printf("\n");
   }
@@ -257,13 +244,12 @@ struct TimeRecordViewer {
     (*r).push_back({const_cast<const char*>("(total)"), total_time});
 
     psz_utils::println_throughput_tablehead();
-    for (auto& i : *r)
-      psz_utils::println_throughput(std::get<0>(i), std::get<1>(i), bytes);
+    for (auto& i : *r) psz_utils::println_throughput(std::get<0>(i), std::get<1>(i), bytes);
 
     printf("\n");
   }
 };
 
-}  // namespace cusz
+}  // namespace psz
 
 #endif /* B166AEEB_917A_448A_91F6_D0F7A186A36A */

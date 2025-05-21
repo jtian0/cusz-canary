@@ -100,15 +100,18 @@ add_library(psz_cu_mem
 target_link_libraries(psz_cu_mem PUBLIC psz_cu_compile_settings CUDA::cudart)
 
 add_library(psz_cu_utils 
+  psz/src/utils/verinfo.cc
+  psz/src/utils/verinfo.cu
+  psz/src/utils/verinfo_nv.cu
   psz/src/utils/vis_stat.cc 
-  psz/src/context.cc
+  psz/src/utils/context.cc
   psz/src/utils/timer_cpu.cc
   psz/src/utils/timer_gpu.cc
 )
 target_link_libraries(psz_cu_utils 
   PUBLIC 
   psz_cu_compile_settings
-  CUDA::cudart
+  CUDA::cudart CUDA::nvml
 )
 
 add_library(psz_cu_phf 
