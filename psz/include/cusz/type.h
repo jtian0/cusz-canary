@@ -45,72 +45,41 @@ typedef void* uninit_stream_t;
 //////// state enumeration
 
 typedef enum psz_error_status {  //
-  CUSZ_SUCCESS = 0x00,
-  CUSZ_FAIL_ONDISK_FILE_ERROR = 0x01,
-  CUSZ_FAIL_DATA_NOT_READY = 0x02,
-  // specify error when calling CUDA API
-  CUSZ_FAIL_GPU_MALLOC,
-  CUSZ_FAIL_GPU_MEMCPY,
-  CUSZ_FAIL_GPU_ILLEGAL_ACCESS,
-  // specify error related to our own memory manager
-  CUSZ_FAIL_GPU_OUT_OF_MEMORY,
-  // when compression is useless
-  CUSZ_FAIL_INCOMPRESSIABLE,
-  // TODO component related error
-  CUSZ_FAIL_UNSUPPORTED_DATATYPE,
-  CUSZ_FAIL_UNSUPPORTED_QUANTTYPE,
-  CUSZ_FAIL_UNSUPPORTED_PRECISION,
-  CUSZ_FAIL_UNSUPPORTED_PIPELINE,
-  // not-implemented error
-  CUSZ_NOT_IMPLEMENTED = 0x0100,
+  PSZ_SUCCESS,
+  PSZ_WARN_RADIUS_TOO_LARGE,
+  PSZ_WARN_OUTLIER_TOO_MANY,
+  PSZ_WARN_INCOMPRESSIABLE,
+  PSZ_ABORT_UNSUPPORTED_TYPE,
+  PSZ_ABORT_UNSUPPORTED_DIMENSION,
+  PSZ_ABORT_NOT_IMPLEMENTED,
 } psz_error_status;
 typedef psz_error_status pszerror;
 
-// typedef enum psz_dtype  //
-// { __F0 = 0,
-//   F4 = 4,
-//   F8 = 8,
-//   __U0 = 10,
-//   U1 = 11,
-//   U2 = 12,
-//   U4 = 14,
-//   U8 = 18,
-//   __I0 = 20,
-//   I1 = 21,
-//   I2 = 22,
-//   I4 = 24,
-//   I8 = 28,
-//   ULL = 31 } psz_dtype;
+// 2505 MERGE
+#define CUSZ_SUCCESS PSZ_SUCCESS
 
 // aliasing
-typedef uint8_t u1;
-typedef uint16_t u2;
-typedef uint32_t u4;
-typedef uint64_t u8;
-typedef unsigned long long ull;
-typedef int8_t i1;
-typedef int16_t i2;
-typedef int32_t i4;
-typedef int64_t i8;
-typedef float f4;
-typedef double f8;
+typedef uint8_t byte_t;
 typedef size_t szt;
 
+#define DEFAULT_PREDICTOR Lorenzo
+#define DEFAULT_HISTOGRAM HistogramGeneric
+#define DEFAULT_CODEC Huffman
+#define NULL_HISTOGRAM NullHistogram
+#define NULL_CODEC NullCodec
+
+#ifndef PSZ_2505_MERGE
 typedef enum psz_space  //
 { Device = 0,
   Host = 1,
   None = 2 } psz_space;
+#endif
 
-typedef enum psz_mode  //
-{ Abs = 0,
-  Rel = 1 } psz_mode;
+typedef enum psz_mode { Abs, Rel, Verbatim } psz_mode;
+typedef enum { Lorenzo, LorenzoZigZag, LorenzoProto, Spline } psz_predtype;
 
-typedef enum psz_predtype  //
-{ Lorenzo = 0,
-  Spline = 1 } psz_predtype;
-
-typedef enum psz_preptype  //
-{ FP64toFP32 = 0,
+typedef enum {
+  FP64toFP32,
   LogTransform,
   ShiftedLogTransform,
   Binning2x2,
@@ -118,14 +87,15 @@ typedef enum psz_preptype  //
   Binning1x2,
 } psz_prep_type;
 
-typedef enum psz_codectype  //
-{ Huffman = 0,
+typedef enum {
+  Huffman,
+  HuffmanRevisit,
+  FZGPUCodec,
   RunLength,
-  // NvcompCascade,
-  // NvcompLz4,
-  // NvcompSnappy,
+  NullCodec,
 } psz_codectype;
 
+#ifndef PSZ_2505_MERGE
 typedef enum psz_hfbktype  //
 { Canonical = 1,
   Sword = 2,
@@ -134,7 +104,15 @@ typedef enum psz_hfbktype  //
 typedef enum psz_hfpartype  //
 { Coarse = 0,
   Fine = 1 } psz_hfpartype;
+#endif
 
+typedef enum {
+  HistogramGeneric,
+  HistogramSparse,
+  NullHistogram,
+} psz_histotype;
+
+#ifndef PSZ_2505_MERGE
 //////// configuration template
 typedef struct pszlen {
   // clang-format off
@@ -144,10 +122,13 @@ typedef struct pszlen {
     union { size_t x3, w; };
   // clang-format on
 } pszlen;
+#endif
 
+#ifndef PSZ_2505_MERGE
 typedef struct pszpredictor {
   psz_predtype type;
 } pszpredictor;
+#endif
 
 typedef struct psz_quantizer {
   int radius;
@@ -155,9 +136,8 @@ typedef struct psz_quantizer {
 typedef psz_quantizer pszquantizer;
 
 typedef struct psz_hfruntimeconfig {
-  psz_hfbktype book;
-  psz_hfpartype style;
-
+  // psz_hfbktype book;
+  // psz_hfpartype style;
   int booklen;
   int coarse_pardeg;
 } psz_hfruntimeconfig;
@@ -217,23 +197,43 @@ typedef u1* pszout;
 // used for bridging some compressor internal buffer
 typedef pszout* ptr_pszout;
 
-struct INTERPOLATION_PARAMS {
-  //
-  double alpha{1.75};
-  double beta{4.0};
-  //
-  // bool interpolators[3];
+// struct INTERPOLATION_PARAMS {
+//   double alpha{1.75};
+//   double beta{4.0};
+//   // bool interpolators[3];
+//   bool use_md[6];
+//   bool use_natural[6];
+//   bool reverse[6];
+//   uint8_t auto_tuning{3};
+//   INTERPOLATION_PARAMS() :
+//       use_md{true, true, false, false, false, false},
+//       use_natural{false, false, false, false, false, false},
+//       reverse{false, false, false, false, false, false} {};
+// };
+
+typedef struct psz_interp_params {
+  double alpha, beta;
+
   bool use_md[6];
   bool use_natural[6];
-  //
   bool reverse[6];
-  uint8_t auto_tuning{3};
-  //
-  INTERPOLATION_PARAMS() :
-      use_md{true, true, false, false, false, false},
-      use_natural{false, false, false, false, false, false},
-      reverse{false, false, false, false, false, false} {};
-};
+  uint8_t auto_tuning;
+} psz_interp_params;
+
+typedef struct psz_interp_params INTERPOLATION_PARAMS;
+
+// C-style "constructor"
+static inline psz_interp_params make_default_params(void)
+{
+  psz_interp_params p = {
+      .alpha = 1.75,
+      .beta = 4.0,
+      .use_md = {1, 1, 0, 0, 0, 0},
+      .use_natural = {0, 0, 0, 0, 0, 0},
+      .reverse = {0, 0, 0, 0, 0, 0},
+      .auto_tuning = 3};
+  return p;
+}
 
 #ifdef __cplusplus
 }

@@ -55,9 +55,8 @@ constexpr int DEFAULT_BLOCK_SIZE = BLOCK_DIM_SIZE;
 
 template <typename T, typename E, typename FP>
 int spline_construct(
-    pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl,
-    void* _outlier, double eb, double rel_eb, uint32_t radius,
-    INTERPOLATION_PARAMS& intp_param, float* time, void* stream,
+    pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, void* _outlier, double eb,
+    double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time, void* stream,
     pszmem_cxx<T>* profiling_errors)
 {
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
@@ -609,9 +608,8 @@ int spline_construct(
 
 template <typename T, typename E, typename FP>
 int spline_reconstruct(
-    pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata,
-    T* outlier_tmp, double eb, uint32_t radius,
-    INTERPOLATION_PARAMS intp_param, float* time, void* stream)
+    pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata, T* outlier_tmp, double eb,
+    uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream)
 {
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
 
@@ -667,16 +665,14 @@ int spline_reconstruct(
   return 0;
 }
 
-#define INIT(T, E, FP)                                                      \
-  template int spline_construct<T, E, FP>(                                  \
-      pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl,  \
-      void* _outlier, double eb, double rel_eb, uint32_t radius,            \
-      struct INTERPOLATION_PARAMS& intp_param, float* time, void* stream,   \
-      pszmem_cxx<T>* profiling_errors);                                     \
-  template int spline_reconstruct<T, E, FP>(                                \
-      pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, \
-      T * outlier_tmp, double eb, uint32_t radius,                          \
-      struct INTERPOLATION_PARAMS intp_param, float* time, void* stream);
+#define INIT(T, E, FP)                                                                          \
+  template int spline_construct<T, E, FP>(                                                      \
+      pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, void* _outlier,      \
+      double eb, double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time, \
+      void* stream, pszmem_cxx<T>* profiling_errors);                                           \
+  template int spline_reconstruct<T, E, FP>(                                                    \
+      pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, T * outlier_tmp,    \
+      double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream);
 
 INIT(f4, u1, f4)
 INIT(f4, u2, f4)

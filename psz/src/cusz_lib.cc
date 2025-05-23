@@ -21,7 +21,7 @@
 
 pszpredictor pszdefault_predictor() { return {Spline}; }
 pszquantizer pszdefault_quantizer() { return {128}; }
-pszhfrc pszdefault_hfcoder() { return {Sword, Coarse, 1024, 768}; }
+pszhfrc pszdefault_hfcoder() { return {1024, 768}; }
 pszframe* pszdefault_framework()
 {
   return new pszframe{
