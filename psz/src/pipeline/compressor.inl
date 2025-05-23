@@ -101,7 +101,7 @@ COR::compress_predict(pszctx* ctx, T* in, void* stream)
     if (spline_in_use()) {
 #ifdef PSZ_USE_CUDA
       mem->od->dptr(in);
-      spline_construct(
+      psz::GPU_spline_construct<T, E, FP>::kernel_v0(
           mem->od, mem->ac, mem->e, (void*)mem->compact, eb, ctx->rel_eb, radius, ctx->intp_param,
           &time_pred, stream, mem->pe);
 #else
@@ -413,7 +413,7 @@ COR::decompress_predict(
 
     // [psz::TODO] throw exception
 
-    spline_reconstruct(
+    psz::GPU_spline_reconstruct<T, E, FP>::kernel_v0(
         &anchor, mem->e, mem->xd, outlier_tmp, eb, radius, intp_param, &time_pred, stream);
 #else
     throw runtime_error("[psz::error] spline_reconstruct not implemented other than CUDA.");

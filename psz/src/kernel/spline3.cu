@@ -15,9 +15,13 @@
 
 #include "cusz/type.h"
 #include "detail/busyheader.hh"
-#include "detail/spline3_md.inl"
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
+#include "mem/memseg_cxx.hh"
+//
+#include "detail/spline3_md.inl"
+
+// clang-format off
 
 #define BLOCK_DIM_SIZE 384
 #define LEVEL 6
@@ -38,6 +42,7 @@
 #define PROFILE_NUM_BLOCK_Z 4
 constexpr int DEFAULT_BLOCK_SIZE = BLOCK_DIM_SIZE;
 
+
 #define SETUP                                                   \
   auto div3 = [](dim3 len, dim3 sublen) {                       \
     return dim3(                                                \
@@ -53,8 +58,8 @@ constexpr int DEFAULT_BLOCK_SIZE = BLOCK_DIM_SIZE;
       return 3;                                                 \
   };
 
-template <typename T, typename E, typename FP>
-int spline_construct(
+template <typename T, typename E, typename Fp>
+int psz::GPU_spline_construct<T, E, Fp>::kernel_v0(
     pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, void* _outlier, double eb,
     double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time, void* stream,
     pszmem_cxx<T>* profiling_errors)
@@ -71,8 +76,6 @@ int spline_construct(
   using Compact = typename CompactDram<PROPER_GPU_BACKEND, T>::Compact;
   auto ot = (Compact*)_outlier;
 
-  // CREATE_GPUEVENT_PAIR;
-  // START_GPUEVENT_RECORDING(stream);
   float att_time = 0;
   if (intp_param.auto_tuning > 0) {
     // std::cout<<"att "<<(int)intp_param.auto_tuning<<std::endl;
@@ -606,8 +609,8 @@ int spline_construct(
   return 0;
 }
 
-template <typename T, typename E, typename FP>
-int spline_reconstruct(
+template <typename T, typename E, typename Fp>
+int psz::GPU_spline_reconstruct<T,E,Fp>::kernel_v0(
     pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata, T* outlier_tmp, double eb,
     uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream)
 {
@@ -627,7 +630,7 @@ int spline_reconstruct(
         div(l3.z, AnchorBlockSizeZ * numAnchorBlockZ));
 
     cusz::x_spline_infprecis_data<
-        E*, T*, FP, LEVEL, SPLINE_DIM_2, AnchorBlockSizeX, AnchorBlockSizeY,
+        E*, T*, Fp, LEVEL, SPLINE_DIM_2, AnchorBlockSizeX, AnchorBlockSizeY,
         AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
         DEFAULT_BLOCK_SIZE>  //
         <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
@@ -645,7 +648,7 @@ int spline_reconstruct(
         dim3(div(l3.x, BLOCK16), div(l3.y, BLOCK16), div(l3.z, BLOCK16));
 
     cusz::x_spline_infprecis_data<
-        E*, T*, FP, 4, SPLINE_DIM_3, BLOCK16, BLOCK16, BLOCK16, 1, 1, 1,
+        E*, T*, Fp, 4, SPLINE_DIM_3, BLOCK16, BLOCK16, BLOCK16, 1, 1, 1,
         DEFAULT_BLOCK_SIZE>  //
         <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
            (cudaStream_t)stream>>>  //
@@ -665,23 +668,14 @@ int spline_reconstruct(
   return 0;
 }
 
-#define INIT(T, E, FP)                                                                          \
-  template int spline_construct<T, E, FP>(                                                      \
-      pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, void* _outlier,      \
-      double eb, double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time, \
-      void* stream, pszmem_cxx<T>* profiling_errors);                                           \
-  template int spline_reconstruct<T, E, FP>(                                                    \
-      pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, T * outlier_tmp,    \
-      double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream);
+// clang-format on
 
-INIT(f4, u1, f4)
-INIT(f4, u2, f4)
-INIT(f4, u4, f4)
-INIT(f4, f4, f4)
+template struct psz::GPU_spline_construct<f4, u1>;
+template struct psz::GPU_spline_construct<f4, u2>;
+template struct psz::GPU_spline_construct<f4, u4>;
 
-// INIT(f8, u1, f8) //placeholder for double input
-// INIT(f8, u2, f8)
-// INIT(f8, u4, f8)
-// INIT(f8, f4, f8)
-#undef INIT
+template struct psz::GPU_spline_reconstruct<f4, u1>;
+template struct psz::GPU_spline_reconstruct<f4, u2>;
+template struct psz::GPU_spline_reconstruct<f4, u4>;
+
 #undef SETUP
