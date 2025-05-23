@@ -14,7 +14,7 @@
 
 #include <hip/hip_runtime.h>
 
-#include "mem/memseg_cxx.hh"
+#include "mem/cxx_memobj.h"
 
 namespace psz::detail::hip {
 
@@ -84,8 +84,7 @@ struct CompactGpuDram {
     return *this;
   }
 
-  CompactGpuDram& control(
-      std::vector<pszmem_control> control_stream, hipStream_t stream = nullptr)
+  CompactGpuDram& control(std::vector<pszmem_control> control_stream, hipStream_t stream = nullptr)
   {
     for (auto& c : control_stream) {
       if (c == Malloc)

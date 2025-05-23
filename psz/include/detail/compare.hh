@@ -38,7 +38,7 @@ bool identical(T* d1, T* d2, size_t const len)
 }
 
 template <pszpolicy P, typename T>
-void probe_extrema(T* in, size_t len, T res[4])
+[[deprecated]] void probe_extrema(T* in, size_t len, T res[4])
 {
   if (P == SEQ) psz::cppstl_extrema(in, len, res);
 #ifdef REACTIVATE_THRUST_DPLGPU
@@ -53,6 +53,32 @@ void probe_extrema(T* in, size_t len, T res[4])
   }
   else
     throw runtime_error(string(__FUNCTION__) + ": backend not supported.");
+}
+
+template <typename T1, psz_runtime R = CUDA, typename T2 = T1>
+void GPU_probe_extrema(T1* in, size_t len, T2& max_value, T2& min_value, T2& range)
+{
+  T1 result[4];
+
+#ifndef PSZ_2505_MERGE
+  if (R == CUDA or R == ROCM)  //
+    psz::cu_hip::extrema(in, len, result);
+#else
+  if (R == CUDA or R == ROCM)
+    module::GPU_extrema(in, len, result);
+  else if (R == SYCL)
+    dpcpp::GPU_extrema(in, len, result);
+#endif
+#ifdef REACTIVATE_THRUSTGPU
+  else if (R == THRUST_DPL)
+    thrustgpu::GPU_extrema(in, len, result);
+#endif
+  else
+    throw runtime_error(string(__FUNCTION__) + ": backend not supported.");
+
+  min_value = result[0];
+  max_value = result[1];
+  range = max_value - min_value;
 }
 
 template <pszpolicy P, typename T>

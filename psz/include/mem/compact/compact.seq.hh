@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <vector>
 
-#include "../memseg_cxx/definition.hh"
+// #include "../memseg_cxx/definition.hh"
 #include "cusz/type.h"
 
 template <typename T>
@@ -53,8 +53,7 @@ struct CompactSerial {
     return *this;
   }
 
-  CompactSerial& control(
-      std::vector<pszmem_control> control_stream, void* placeholder = nullptr)
+  CompactSerial& control(std::vector<psz_mem_control> control_stream, void* placeholder = nullptr)
   {
     for (auto& c : control_stream) {
       if (c == Malloc)

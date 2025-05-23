@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <sycl/sycl.hpp>
 
-#include "mem/memseg_cxx.hh"
+#include "mem/cxx_memobj.h"
 
 namespace psz::detail::dpcpp {
 
@@ -59,8 +59,7 @@ struct CompactGpuDram {
   {
     dpct::device_ext &dev_ct1 = dpct::get_current_device();
     sycl::queue &q_ct1 = dev_ct1.default_queue();
-    sycl::free(d_idx, q_ct1), sycl::free(d_val, q_ct1),
-        sycl::free(d_num, q_ct1);
+    sycl::free(d_idx, q_ct1), sycl::free(d_val, q_ct1), sycl::free(d_num, q_ct1);
     return *this;
   }
 
@@ -73,8 +72,7 @@ struct CompactGpuDram {
   }
 
   // memcpy
-  CompactGpuDram &make_host_accessible(
-      dpct::queue_ptr stream = &dpct::get_default_queue())
+  CompactGpuDram &make_host_accessible(dpct::queue_ptr stream = &dpct::get_default_queue())
   {
     stream->memcpy(&h_num, d_num, 1 * sizeof(uint32_t));
     stream->wait();

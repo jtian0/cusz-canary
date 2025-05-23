@@ -15,7 +15,11 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "mem/memseg_cxx.hh"
+// #include "mem/cxx_memobj.h"
+#include "mem/cxx_memobj.h"
+
+template <typename T>
+using memobj = _portable::memobj<T>;
 
 // template <typename T, typename E, typename FP = T>
 // int spline_construct(
@@ -33,16 +37,16 @@ namespace psz {
 template <typename T, typename E, typename Fp = T>
 struct GPU_spline_construct {
   static int kernel_v0(
-      pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* errctrl, void* _outlier,
-      double eb, double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time,
-      void* stream, pszmem_cxx<T>* profiling_errors);
+      memobj<T>* data, memobj<T>* anchor, memobj<E>* errctrl, void* _outlier, double eb,
+      double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time, void* stream,
+      memobj<T>* profiling_errors);
 };
 
 template <typename T, typename E, typename Fp = T>
 struct GPU_spline_reconstruct {
   static int kernel_v0(
-      pszmem_cxx<T>* anchor, pszmem_cxx<E>* errctrl, pszmem_cxx<T>* xdata, T* outlier_tmp,
-      double eb, uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream);
+      memobj<T>* anchor, memobj<E>* errctrl, memobj<T>* xdata, T* outlier_tmp, double eb,
+      uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream);
 };
 
 }  // namespace psz

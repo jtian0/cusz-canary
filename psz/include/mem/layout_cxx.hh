@@ -16,10 +16,13 @@
 #include "cusz/type.h"
 #include "detail/port.hh"
 #include "layout.h"
-#include "memseg_cxx.hh"
+// #include "memseg_cxx.hh"
+#include "mem/cxx_memobj.h"
 
-template <
-    typename T, typename E, typename H, pszpolicy EXEC = PROPER_GPU_BACKEND>
+template <typename T>
+using memobj = _portable::memobj<T>;
+
+template <typename T, typename E, typename H, pszpolicy EXEC = PROPER_GPU_BACKEND>
 class pszmempool_cxx {
  public:
   using M = uint32_t;
@@ -27,25 +30,24 @@ class pszmempool_cxx {
   using B = uint8_t;
   using Compact = typename CompactDram<EXEC, T>::Compact;
 
-  pszmem_cxx<T> *od;           // original data
-  pszmem_cxx<T> *xd, *xdtest;  // decomp'ed data (xdtest for testing)
-  pszmem_cxx<T> *ac;           // anchor
-  pszmem_cxx<T> *pe;           // profiling error
-  pszmem_cxx<E> *e, *etest;    // ectrl (etest for testing)
-  pszmem_cxx<F> *ht;           // hist/frequency
+  memobj<T> *od;           // original data
+  memobj<T> *xd, *xdtest;  // decomp'ed data (xdtest for testing)
+  memobj<T> *ac;           // anchor
+  memobj<T> *pe;           // profiling error
+  memobj<E> *e, *etest;    // ectrl (etest for testing)
+  memobj<F> *ht;           // hist/frequency
 
   Compact *compact;
 
-  pszmem_cxx<B> *_compressed;  // compressed
-  B *_compressed_rre1;         // final compressed
+  memobj<B> *_compressed;  // compressed
+  B *_compressed_rre1;     // final compressed
 
   size_t len;
   int radius, bklen;
 
  public:
   // ctor, dtor
-  pszmempool_cxx(
-      u4 _x, int _radius = 32768, u4 _y = 1, u4 _z = 1);  // ori radius 512
+  pszmempool_cxx(u4 _x, int _radius = 32768, u4 _y = 1, u4 _z = 1);  // ori radius 512
   ~pszmempool_cxx();
   // utils
   pszmempool_cxx *clear_buffer();
@@ -77,17 +79,17 @@ TPL POOL::pszmempool_cxx(u4 x, int _radius, u4 y, u4 z)
   // constexpr auto ERR_HISTO_LEN = 6;
   constexpr auto ERR_HISTO_LEN = 36;
 
-  _compressed = new pszmem_cxx<B>(len * 1.2, 1, 1, "compressed");
+  _compressed = new memobj<B>(len * 1.2, 1, 1, "compressed");
 
-  od = new pszmem_cxx<T>(x, y, z, "original data");
-  xd = new pszmem_cxx<T>(x, y, z, "reconstructed data");
-  xdtest = new pszmem_cxx<T>(x, y, z, "reconstructed data (test)");
-  ac = new pszmem_cxx<T>(div(x, BLK), div(y, BLK), div(z, BLK), "anchor");
-  pe = new pszmem_cxx<T>(ERR_HISTO_LEN, 1, 1, "profiling errors");
-  e = new pszmem_cxx<E>(x, y, z, "ectrl-lorenzo");
-  etest = new pszmem_cxx<E>(x, y, z, "ectrl-lorenzo (test)");
+  od = new memobj<T>(x, y, z, "original data");
+  xd = new memobj<T>(x, y, z, "reconstructed data");
+  xdtest = new memobj<T>(x, y, z, "reconstructed data (test)");
+  ac = new memobj<T>(div(x, BLK), div(y, BLK), div(z, BLK), "anchor");
+  pe = new memobj<T>(ERR_HISTO_LEN, 1, 1, "profiling errors");
+  e = new memobj<E>(x, y, z, "ectrl-lorenzo");
+  etest = new memobj<E>(x, y, z, "ectrl-lorenzo (test)");
 
-  ht = new pszmem_cxx<F>(bklen, 1, 1, "hist");
+  ht = new memobj<F>(bklen, 1, 1, "hist");
 
   compact = new Compact;
 

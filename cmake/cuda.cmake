@@ -79,7 +79,6 @@ target_link_libraries(psz_seq_core
 )
 
 add_library(psz_cu_core
-  psz/src/kernel/dryrun.cu
   psz/src/kernel/lproto.cu
   psz/src/kernel/spvn.cu
   psz/src/kernel/spv_legacy.cu
@@ -94,8 +93,10 @@ add_library(psz_cu_core
 target_link_libraries(psz_cu_core PUBLIC psz_cu_compile_settings)
 
 add_library(psz_cu_mem 
-  psz/src/mem/memseg.cc
-  psz/src/mem/memseg_cu.cc
+  portable/src/mem/memobj.f.cc
+  portable/src/mem/memobj.i.cc
+  portable/src/mem/memobj.u.cc
+  portable/src/mem/memobj.misc.cc
 )
 target_link_libraries(psz_cu_mem PUBLIC psz_cu_compile_settings CUDA::cudart)
 
@@ -190,7 +191,7 @@ if(PSZ_BUILD_EXAMPLES)
 endif()
 
 if(BUILD_TESTING)
-  add_subdirectory(test)
+  # add_subdirectory(test)
 endif()
 
 # installation

@@ -16,7 +16,7 @@
 
 #include <stdexcept>
 
-#include "mem/memseg_cxx.hh"
+#include "mem/cxx_memobj.h"
 
 namespace psz {
 namespace detail {
@@ -94,8 +94,7 @@ struct CompactGpuDram {
   }
 
   CompactGpuDram& control(
-      std::vector<pszmem_control> control_stream,
-      cudaStream_t stream = nullptr)
+      std::vector<psz_mem_control> control_stream, cudaStream_t stream = nullptr)
   {
     for (auto& c : control_stream) {
       if (c == Malloc)

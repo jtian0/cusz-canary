@@ -16,8 +16,7 @@
   void psz_testframe<T>
 
 TESTFRAME::full_compress(
-    pszctx* ctx, Compressor* cor, T* in, BYTE** out, szt* outlen,
-    uninit_stream_t stream)
+    pszctx* ctx, Compressor* cor, T* in, BYTE** out, szt* outlen, uninit_stream_t stream)
 {
   cor->compress_predict(ctx, in, stream);
   cor->compress_histogram(ctx, stream);
@@ -28,8 +27,7 @@ TESTFRAME::full_compress(
 }
 
 TESTFRAME::full_decompress(
-    pszheader* header, Compressor* cor, u1* d_compressed, T* out,
-    uninit_stream_t stream)
+    pszheader* header, Compressor* cor, u1* d_compressed, T* out, uninit_stream_t stream)
 {
   auto in = d_compressed;
   auto d_space = out, d_xdata = out;
@@ -40,8 +38,7 @@ TESTFRAME::full_decompress(
   cor->decompress_collect_kerneltime(header);
 }
 
-TESTFRAME::pred_comp_decomp(
-    pszctx* ctx, Compressor* cor, T* in, T* out, uninit_stream_t stream)
+TESTFRAME::pred_comp_decomp(pszctx* ctx, Compressor* cor, T* in, T* out, uninit_stream_t stream)
 {
   auto header = new pszheader{};
   float time_sp;
@@ -51,8 +48,8 @@ TESTFRAME::pred_comp_decomp(
   auto d_anchor = cor->mem->ac->dptr();
 
   psz::spv_scatter_naive<PROPER_GPU_BACKEND, T>(
-      cor->mem->compact_val(), cor->mem->compact_idx(),
-      cor->mem->compact_num_outliers(), d_space, &time_sp, stream);
+      cor->mem->compact_val(), cor->mem->compact_idx(), cor->mem->compact_num_outliers(), d_space,
+      &time_sp, stream);
 
   header->x = ctx->x, header->y = ctx->y, header->z = ctx->z;
   header->eb = ctx->eb, header->radius = ctx->radius;
@@ -61,8 +58,7 @@ TESTFRAME::pred_comp_decomp(
 }
 
 TESTFRAME::pred_hist_comp(
-    pszctx* ctx, Compressor* cor, T* in, uninit_stream_t stream,
-    bool skip_print)
+    pszctx* ctx, Compressor* cor, T* in, uninit_stream_t stream, bool skip_print)
 {
   float time_hist;
   auto len = ctx->data_len;
@@ -76,10 +72,10 @@ TESTFRAME::pred_hist_comp(
   auto ectrl_gpu = cor->mem->e->dptr();
   auto ectrl_cpu = cor->mem->e->hptr();
 
-  auto ht_gpu = new pszmem_cxx<u4>(booklen, 1, 1, "ht_gpu");
+  auto ht_gpu = new memobj<u4>(booklen, 1, 1, "ht_gpu");
   ht_gpu->control({Malloc, MallocHost});
 
-  auto ht_cpu = new pszmem_cxx<u4>(booklen, 1, 1, "ht_cpu");
+  auto ht_cpu = new memobj<u4>(booklen, 1, 1, "ht_cpu");
   ht_cpu->control({MallocHost});
 
   // psz::histsp<PROPER_GPU_BACKEND, u4>(
@@ -92,8 +88,7 @@ TESTFRAME::pred_hist_comp(
   if (eq)
     printf("[psz::test] CPU and GPU hist result in the same.\n");
   else
-    throw std::runtime_error(
-        "[psz::test::error] CPU and GPU hist result differently.");
+    throw std::runtime_error("[psz::test::error] CPU and GPU hist result differently.");
 
   if (not skip_print) {
     auto count = 0u;
@@ -104,8 +99,7 @@ TESTFRAME::pred_hist_comp(
   }
 }
 
-TESTFRAME::pred_hist_hf_comp(
-    pszctx* ctx, Compressor* cor, T* in, uninit_stream_t stream)
+TESTFRAME::pred_hist_hf_comp(pszctx* ctx, Compressor* cor, T* in, uninit_stream_t stream)
 {
   // TODO wrap up pred_hist_comp
 }

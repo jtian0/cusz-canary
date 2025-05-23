@@ -154,7 +154,11 @@ struct memobj<Ctype>::impl {
     constexpr auto type_supported = std::is_same_v<Ctype, float> or std::is_same_v<Ctype, double>;
 
     if (type_supported)
+#ifndef PSZ_2505_MERGE
+      psz::GPU_probe_extrema<Ctype, CUDA>(d, _len, max_value, min_value, range);  // ad-hoc
+#else
       psz::analysis::GPU_probe_extrema<Ctype, CUDA>(d, _len, max_value, min_value, range);
+#endif
     else
       throw std::runtime_error("`extrema_scan` supports `float` or `double` for now.");
   }

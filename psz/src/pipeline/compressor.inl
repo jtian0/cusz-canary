@@ -214,8 +214,7 @@ COR::compress_wrapup(BYTE** out, szt* outlen)
   /* output of this function */
   *out = mem->_compressed->dptr();
   *outlen = header.entry[Header::END + 1];
-  mem->_compressed->m->len = *outlen;
-  mem->_compressed->m->bytes = *outlen;
+  mem->_compressed->set_len(*outlen);
 
   return this;
 }
@@ -407,8 +406,8 @@ COR::decompress_predict(
     mem->xd->dptr(out);
 
     // TODO release borrow
-    auto aclen3 = mem->ac->template len3<dim3>();
-    pszmem_cxx<T> anchor(aclen3.x, aclen3.y, aclen3.z);
+    auto aclen3 = mem->ac->len3();
+    memobj<T> anchor(aclen3.x, aclen3.y, aclen3.z);
     anchor.dptr(d_anchor);
 
     // [psz::TODO] throw exception
@@ -441,7 +440,10 @@ COR::decompress_tcms(pszheader* header, BYTE* in, uninit_stream_t stream)
   auto access = [&](int FIELD, szt offset_nbyte = 0) {
     return (void*)(in + header->entry[FIELD] + offset_nbyte);
   };
-  TCMS_DECOMPRESS((uint8_t*)access(Header::VLE), &mem->e->m->d, &time_tcms);
+  E* TCMS_output;
+  TCMS_DECOMPRESS((uint8_t*)access(Header::VLE), (void**)&TCMS_output, &time_tcms);
+  mem->e->dptr(TCMS_output);
+
   return this;
 }
 
@@ -465,7 +467,10 @@ COR::decompress_scatter(pszheader* header, BYTE* in, T* d_space, uninit_stream_t
                    header->entry[Header::VLE] + header->splen * sizeof(T));
   }
   else {
-    TCMS_DECOMPRESS((uint8_t*)access(Header::VLE), &mem->e->m->d, &time_tcms);
+    E* TCMS_output;
+    TCMS_DECOMPRESS((uint8_t*)access(Header::VLE), (void**)&TCMS_output, &time_tcms);
+    mem->e->dptr(TCMS_output);
+
     BITR_DECOMPRESS((uint8_t*)access(Header::ANCHOR), &decompressed_data, &time_bitr);
     device_anchor = (T*)decompressed_data;
     d_spval = (T*)((uint8_t*)decompressed_data + header->entry[Header::SPFMT] -

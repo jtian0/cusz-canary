@@ -18,7 +18,7 @@
 #include "detail/spline.inl"
 #include "kernel/spline.hh"
 #include "mem/compact.hh"
-// #include "mem/memseg_cxx.hh"
+// #include "mem/cxx_memobj.h"
 // #include "mem/memseg.h"
 // #include "mem/layout.h"
 // #include "mem/layout_cxx.hh"
@@ -32,26 +32,24 @@
 
 constexpr int DEFAULT_BLOCK_SIZE = 384;
 
-#define SETUP                                                   \
-  auto div3 = [](dim3 len, dim3 sublen) {                       \
-    return dim3(                                                \
-        (len.x - 1) / sublen.x + 1, (len.y - 1) / sublen.y + 1, \
-        (len.z - 1) / sublen.z + 1);                            \
-  };                                                            \
-  auto ndim = [&]() {                                           \
-    if (len3.z == 1 and len3.y == 1)                            \
-      return 1;                                                 \
-    else if (len3.z == 1 and len3.y != 1)                       \
-      return 2;                                                 \
-    else                                                        \
-      return 3;                                                 \
+#define SETUP                                                                                \
+  auto div3 = [](dim3 len, dim3 sublen) {                                                    \
+    return dim3(                                                                             \
+        (len.x - 1) / sublen.x + 1, (len.y - 1) / sublen.y + 1, (len.z - 1) / sublen.z + 1); \
+  };                                                                                         \
+  auto ndim = [&]() {                                                                        \
+    if (len3.z == 1 and len3.y == 1)                                                         \
+      return 1;                                                                              \
+    else if (len3.z == 1 and len3.y != 1)                                                    \
+      return 2;                                                                              \
+    else                                                                                     \
+      return 3;                                                                              \
   };
 
 template <typename T, typename E, typename FP>
 int spline_construct(
-    pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl,
-    void* _outlier, double eb, double rel_eb, uint32_t radius,
-    INTERPOLATION_PARAMS& intp_param, float* time, void* stream,
+    pszmem_cxx<T>* data, pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, void* _outlier, double eb,
+    double rel_eb, uint32_t radius, INTERPOLATION_PARAMS& intp_param, float* time, void* stream,
     pszmem_cxx<T>* profiling_errors)
 {
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
@@ -61,8 +59,7 @@ int spline_construct(
 
   auto l3 = data->template len3<dim3>();
   auto grid_dim = dim3(
-      div(l3.x, AnchorBlockSizeX * numAnchorBlockX),
-      div(l3.y, AnchorBlockSizeY * numAnchorBlockY),
+      div(l3.x, AnchorBlockSizeX * numAnchorBlockX), div(l3.y, AnchorBlockSizeY * numAnchorBlockY),
       div(l3.z, AnchorBlockSizeZ * numAnchorBlockZ));
 
   auto auto_tuning_grid_dim = dim3(1, 1, 1);
@@ -104,19 +101,17 @@ int spline_construct(
   }
 
   intp_param.reverse[0] = intp_param.reverse[1] = intp_param.reverse[2] = true;
-  intp_param.interpolators[0] = intp_param.interpolators[1] =
-      intp_param.interpolators[2] = true;
+  intp_param.interpolators[0] = intp_param.interpolators[1] = intp_param.interpolators[2] = true;
   cusz::c_spline_infprecis_data<
-      T*, E*, float, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY,
-      AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
-      DEFAULT_BLOCK_SIZE>
+      T*, E*, float, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+      numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ, DEFAULT_BLOCK_SIZE>
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0, (cudaStream_t)stream>>>(
           data->dptr(), data->template len3<dim3>(),
           data->template st3<dim3>(),  //
           ectrl->dptr(), ectrl->template len3<dim3>(),
           ectrl->template st3<dim3>(),  //
-          anchor->dptr(), anchor->template st3<dim3>(), ot->val(), ot->idx(),
-          ot->num(), eb_r, ebx2, radius,
+          anchor->dptr(), anchor->template st3<dim3>(), ot->val(), ot->idx(), ot->num(), eb_r,
+          ebx2, radius,
           intp_param);  //,profiling_errors->dptr());
 
   STOP_GPUEVENT_RECORDING(stream);
@@ -129,9 +124,8 @@ int spline_construct(
 
 template <typename T, typename E, typename FP>
 int spline_reconstruct(
-    pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata,
-    T* outlier_tmp, double eb, uint32_t radius,
-    INTERPOLATION_PARAMS intp_param, float* time, void* stream)
+    pszmem_cxx<T>* anchor, pszmem_cxx<E>* ectrl, pszmem_cxx<T>* xdata, T* outlier_tmp, double eb,
+    uint32_t radius, INTERPOLATION_PARAMS intp_param, float* time, void* stream)
 {
   auto div = [](auto _l, auto _subl) { return (_l - 1) / _subl + 1; };
 
@@ -140,18 +134,17 @@ int spline_reconstruct(
 
   auto l3 = xdata->template len3<dim3>();
   auto grid_dim = dim3(
-      div(l3.x, AnchorBlockSizeX * numAnchorBlockX),
-      div(l3.y, AnchorBlockSizeY * numAnchorBlockY),
+      div(l3.x, AnchorBlockSizeX * numAnchorBlockX), div(l3.y, AnchorBlockSizeY * numAnchorBlockY),
       div(l3.z, AnchorBlockSizeZ * numAnchorBlockZ));
 
   CREATE_GPUEVENT_PAIR;
   START_GPUEVENT_RECORDING(stream);
   printf(
-      "%d %d %d\n", xdata->template len3<dim3>().x,
-      xdata->template len3<dim3>().y, xdata->template len3<dim3>().z);
+      "%d %d %d\n", xdata->template len3<dim3>().x, xdata->template len3<dim3>().y,
+      xdata->template len3<dim3>().z);
   cusz::x_spline_infprecis_data<
-      E*, T*, float, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY,
-      AnchorBlockSizeZ, numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
+      E*, T*, float, SPLINE_DIM, AnchorBlockSizeX, AnchorBlockSizeY, AnchorBlockSizeZ,
+      numAnchorBlockX, numAnchorBlockY, numAnchorBlockZ,
       DEFAULT_BLOCK_SIZE>  //
       <<<grid_dim, dim3(DEFAULT_BLOCK_SIZE, 1, 1), 0,
          (cudaStream_t)stream>>>  //
@@ -171,16 +164,15 @@ int spline_reconstruct(
   return 0;
 }
 
-#define INIT(T, E)                                                          \
-  template int spline_construct<T, E>(                                      \
-      pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl,  \
-      void* _outlier, double eb, double rel_eb, uint32_t radius,            \
-      struct INTERPOLATION_PARAMS& intp_param, float* time, void* stream,   \
-      pszmem_cxx<T>* profiling_errors);                                     \
-  template int spline_reconstruct<T, E>(                                    \
-      pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, \
-      T * outlier_tmp, double eb, uint32_t radius,                          \
-      struct INTERPOLATION_PARAMS intp_param, float* time, void* stream);
+#define INIT(T, E)                                                                           \
+  template int spline_construct<T, E>(                                                       \
+      pszmem_cxx<T> * data, pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, void* _outlier,   \
+      double eb, double rel_eb, uint32_t radius, struct INTERPOLATION_PARAMS& intp_param,    \
+      float* time, void* stream, pszmem_cxx<T>* profiling_errors);                           \
+  template int spline_reconstruct<T, E>(                                                     \
+      pszmem_cxx<T> * anchor, pszmem_cxx<E> * ectrl, pszmem_cxx<T> * xdata, T * outlier_tmp, \
+      double eb, uint32_t radius, struct INTERPOLATION_PARAMS intp_param, float* time,       \
+      void* stream);
 
 INIT(f4, u1)
 INIT(f4, u2)

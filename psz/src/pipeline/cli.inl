@@ -19,7 +19,6 @@
 #include "detail/port.hh"
 //
 #include "cusz/context.h"
-#include "dryrun.hh"
 #include "lc_gen/lc_gen.h"
 #include "mem.hh"
 #include "tehm.hh"
@@ -40,72 +39,11 @@ class CLI {
  public:
   CLI() = default;
 
-  template <typename T>
-  static void do_dryrun(pszctx* ctx, bool dualquant = true)
-  {
-#if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
-#elif defined(PSZ_USE_1API)
-    dpct::device_ext& dev_ct1 = dpct::get_current_device();
-    dpct::queue_ptr stream = dev_ct1.create_queue();
-#endif
-
-    auto x = ctx->x, y = ctx->y, z = ctx->z;
-    auto eb = ctx->eb;
-    auto r2r = ctx->mode == Rel;
-    auto fname = ctx->infile;
-
-    pszmem_cxx<T>* original = new pszmem_cxx<T>(x, y, z, "original");
-    pszmem_cxx<T>* reconst = new pszmem_cxx<T>(x, y, z, "reconst");
-    original->control({MallocHost, Malloc});
-    reconst->control({MallocHost, Malloc});
-
-    double max, min, rng;
-    auto len = original->len();
-
-    original->debug();
-
-    original->file(fname, FromFile)->control({Async_H2D}, stream);
-#if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    CHECK_GPU(cudaStreamSynchronize((cudaStream_t)stream));
-#elif defined(PSZ_USE_1API)
-    stream->wait();
-#endif
-
-    if (r2r) original->extrema_scan(max, min, rng), eb *= rng;
-
-#if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    psz::cu_hip::dryrun(len, original->dptr(), reconst->dptr(), eb, stream);
-#elif defined(PSZ_USE_1API)
-    psz::dpcpp::dryrun(len, original->dptr(), reconst->dptr(), eb, stream);
-#endif
-
-    reconst->control({D2H});
-
-    psz_statistics stat;
-    psz::assess_quality<SEQ>(&stat, reconst->hptr(), original->hptr(), len);
-    psz::print_metrics_cross<T>(&stat, 0, true);
-
-    // destroy
-    original->control({FreeHost, Free});
-    reconst->control({FreeHost, Free});
-
-    delete original;
-    delete reconst;
-
-#if defined(PSZ_USE_CUDA) || defined(PSZ_USE_HIP)
-    cudaStreamDestroy(stream);
-#elif defined(PSZ_USE_1API)
-    dev_ct1.destroy_queue(stream);
-#endif
-  }
-
  private:
   void write_compressed_to_disk(
       std::string compressed_name, uint8_t* compressed, size_t compressed_len)
   {
-    auto file = new pszmem_cxx<uint8_t>(compressed_len, 1, 1, "cusza");
+    auto file = new memobj<uint8_t>(compressed_len, 1, 1, "cusza");
     file->dptr(compressed)->control({MallocHost, D2H})->file(compressed_name.c_str(), ToFile);
     // ->control({FreeHost});
 
@@ -115,7 +53,7 @@ class CLI {
   // template <typename compressor_t>
   void do_construct(pszctx* ctx, psz_compressor* compressor, void* stream)
   {
-    auto input = new pszmem_cxx<T>(ctx->x, ctx->y, ctx->z, "uncompressed");
+    auto input = new memobj<T>(ctx->x, ctx->y, ctx->z, "uncompressed");
 
     uint8_t* compressed;
     size_t compressed_len;
@@ -161,7 +99,7 @@ class CLI {
     // all lengths in metadata
     auto compressed_len = psz_utils::filesize(ctx->infile);
 
-    auto compressed = new pszmem_cxx<uint8_t>(compressed_len, 1, 1, "compressed");
+    auto compressed = new memobj<uint8_t>(compressed_len, 1, 1, "compressed");
 
     compressed->control({MallocHost, Malloc})->file(ctx->infile, FromFile)->control({H2D});
 
@@ -170,12 +108,12 @@ class CLI {
     auto len = psz_utils::uncompressed_len(header);
     ctx->use_huffman = header->with_huffman;
 
-    auto decompressed = new pszmem_cxx<T>(len, 1, 1, "decompressed");
-    auto outlier_tmp = new pszmem_cxx<T>(len, 1, 1, "outlier_tmp");
+    auto decompressed = new memobj<T>(len, 1, 1, "decompressed");
+    auto outlier_tmp = new memobj<T>(len, 1, 1, "outlier_tmp");
     decompressed->control({MallocHost, Malloc});
     outlier_tmp->control({MallocHost, Malloc});
 
-    auto original = new pszmem_cxx<T>(len, 1, 1, "original-cmp");
+    auto original = new memobj<T>(len, 1, 1, "original-cmp");
 
     psz::TimeRecord timerecord;
 
@@ -189,7 +127,7 @@ class CLI {
         outlier_tmp->dptr(), decomp_len, (void*)&timerecord, stream);
 
     if (ctx->report_time)
-      psz::TimeRecordViewer::view_decompression(&timerecord, decompressed->m->bytes);
+      psz::TimeRecordViewer::view_decompression(&timerecord, decompressed->bytes());
     psz::view(header, decompressed, original, ctx->original_file);
 
     if (not ctx->skip_tofile)
@@ -215,7 +153,6 @@ class CLI {
     CHECK_GPU(cudaStreamCreate(&stream));
 
     // TODO enable f8
-    if (ctx->task_dryrun) do_dryrun<float>(ctx);
     if (ctx->task_construct) do_construct(ctx, compressor, stream);
     if (ctx->task_reconstruct) do_reconstruct(ctx, compressor, stream);
     if (stream) cudaStreamDestroy(stream);
@@ -234,7 +171,6 @@ class CLI {
       q = sycl::queue(sycl::default_selector_v, plist);
 
     // TODO enable f8
-    if (ctx->task_dryrun) do_dryrun<float>(ctx);
     if (ctx->task_construct) do_construct(ctx, compressor, &q);
     if (ctx->task_reconstruct) do_reconstruct(ctx, compressor, &q);
 

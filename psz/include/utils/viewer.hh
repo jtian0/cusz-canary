@@ -19,7 +19,7 @@
 #include "cusz/header.h"
 #include "cusz/type.h"
 #include "detail/port.hh"
-#include "mem/memseg_cxx.hh"
+#include "mem/cxx_memobj.h"
 #include "verify.hh"
 
 // deps
