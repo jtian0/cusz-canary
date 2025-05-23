@@ -9,11 +9,13 @@
  *
  */
 
+#include <dpct/dpct.hpp>
+#include <sycl/sycl.hpp>
+
 #include "detail/busyheader.hh"
-#include "kernel/detail/histsp.cuhip.inl"
-#include "kernel/hist.hh"
-#include "kernel/histsp.hh"
-#include "mem/memseg_cxx.hh"
+#include "kernel/detail/histsp.dp.inl"
+#include "mem/cxx_memobj.h"
+#include "module/cxx_module.hh"
 
 using T = uint32_t;
 using FQ = uint32_t;
@@ -27,16 +29,13 @@ float dist3[] = {0.005, 0.015, 0.96, 0.015, 0.005};
 
 bool test1_debug()
 {
+  dpct::device_ext& dev_ct1 = dpct::get_current_device();
   auto inlen = 256;
   auto NSYM = 1024;
 
-  auto in = new pszmem_cxx<T>(inlen, 1, 1, "hist-in");
-  auto o_gpusp = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_gpusp");
-  auto o_serial = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_gpusp");
-
-  in->control({Malloc, MallocHost});
-  o_gpusp->control({Malloc, MallocHost});
-  o_serial->control({MallocHost});
+  auto in = new memobj<T>(inlen, "hist-in", {Malloc, MallocHost});
+  auto o_gpusp = new memobj<FQ>(NSYM, "hist-o_gpusp", {Malloc, MallocHost});
+  auto o_serial = new memobj<FQ>(NSYM, "hist-o_gpusp", {MallocHost});
 
   for (auto i = 0; i < inlen; i++) {
     in->hptr(i) = 512;
@@ -51,24 +50,23 @@ bool test1_debug()
 
   float t_histsp_ser, t_histsp_cuda;
 
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
+  dpct::queue_ptr stream;
+  stream = dev_ct1.create_queue();
 
-  psz::histsp<pszpolicy::SEQ, T, uint32_t>(
+  pszcxx_histogram_cauchy<psz_runtime::SEQ, T, uint32_t>(
       in->hptr(), inlen, o_serial->hptr(), NSYM, &t_histsp_ser);
 
-  psz::histsp<PROPER_GPU_BACKEND, T, uint32_t>(
+  pszcxx_histogram_cauchy<PROPER_RUNTIME, T, uint32_t>(
       in->dptr(), inlen, o_gpusp->dptr(), NSYM, &t_histsp_cuda, stream);
 
   o_gpusp->control({D2H});
 
   // check for error
-  cudaError_t error = cudaGetLastError();
-  if (error != cudaSuccess) {
-    // print the CUDA error message and exit
-    printf("CUDA error: %s\n", cudaGetErrorString(error));
-    exit(-1);
-  }
+  /*
+  DPCT1010:1: SYCL uses exceptions to report errors and does not use the error
+  codes. The call was replaced with 0. You need to rewrite this code.
+  */
+  dpct::err0 error = 0;
 
   auto all_eq = true;
   printf("\n\n");
@@ -83,7 +81,7 @@ bool test1_debug()
     }
   }
 
-  cudaStreamDestroy(stream);
+  dev_ct1.destroy_queue(stream);
 
   delete in;
   delete o_gpusp;
@@ -92,8 +90,7 @@ bool test1_debug()
   return all_eq;
 }
 
-void helper_generate_array(
-    T* in, size_t inlen, float dist[], int distlen = 5, int offset = 512)
+void helper_generate_array(T* in, size_t inlen, float dist[], int distlen = 5, int offset = 512)
 {
   // cout << "offset: " << offset << endl;
 
@@ -122,15 +119,11 @@ void helper_generate_array(
 template <int NSYM = 1024>
 bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
 {
-  auto in = new pszmem_cxx<T>(inlen, 1, 1, "hist-in");
-  auto o_gpu = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_gpu");
-  auto o_gpusp = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_gpusp");
-  auto o_serial = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_serial");
-
-  in->control({Malloc, MallocHost});
-  o_gpu->control({Malloc, MallocHost});
-  o_gpusp->control({Malloc, MallocHost});
-  o_serial->control({MallocHost});
+  dpct::device_ext& dev_ct1 = dpct::get_current_device();
+  auto in = new memobj<T>(inlen, "hist-in", {Malloc, MallocHost});
+  auto o_gpu = new memobj<FQ>(NSYM, "hist-o_gpu", {Malloc, MallocHost});
+  auto o_gpusp = new memobj<FQ>(NSYM, "hist-o_gpusp", {Malloc, MallocHost});
+  auto o_serial = new memobj<FQ>(NSYM, "hist-o_serial", {MallocHost});
 
   // setup using randgen
   helper_generate_array(in->hptr(), inlen, gen_dist, distlen, NSYM / 2);
@@ -138,36 +131,32 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
   in->control({H2D});
   float t_hist_cuda, t_histsp_ser, t_histsp_cuda;
 
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
+  dpct::queue_ptr stream;
+  stream = dev_ct1.create_queue();
 
-  psz::histsp<PROPER_GPU_BACKEND, T, uint32_t>(
+  pszcxx_histogram_cauchy<PROPER_RUNTIME, T, uint32_t>(
       in->dptr(), inlen, o_gpusp->dptr(), NSYM, &t_histsp_cuda, stream);
-  psz::histogram<PROPER_GPU_BACKEND, T>(
-      in->dptr(), inlen, o_gpu->dptr(), NSYM, &t_hist_cuda, stream);
+  // pszcxx_histogram_generic<PROPER_RUNTIME, T>(
+  //     in->dptr(), inlen, o_gpu->dptr(), NSYM, &t_hist_cuda, stream);
 
-  psz::histsp<pszpolicy::SEQ, T, uint32_t>(
+  pszcxx_histogram_cauchy<psz_runtime::SEQ, T, uint32_t>(
       in->hptr(), inlen, o_serial->hptr(), NSYM, &t_histsp_ser);
 
   o_gpu->control({D2H});
   o_gpusp->control({D2H});
 
   // check for error
-  cudaError_t error = cudaGetLastError();
-  if (error != cudaSuccess) {
-    // print the CUDA error message and exit
-    printf("CUDA error: %s\n", cudaGetErrorString(error));
-    exit(-1);
-  }
+  /*
+  DPCT1010:3: SYCL uses exceptions to report errors and does not use the error
+  codes. The call was replaced with 0. You need to rewrite this code.
+  */
+  dpct::err0 error = 0;
 
   // check correctness
   auto all_eq = true;
 
   for (auto i = 0; i < NSYM; i++) {
-    if (o_gpu->hptr(i) == o_gpusp->hptr(i) and
-        o_gpusp->hptr(i) == o_serial->hptr(i)) {
-      continue;
-    }
+    if (o_gpu->hptr(i) == o_gpusp->hptr(i) and o_gpusp->hptr(i) == o_serial->hptr(i)) { continue; }
     else {
       printf(
           "first not equal\t"
@@ -179,7 +168,7 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
   }
   if (all_eq) printf("full-length test: all equal\n");
 
-  cudaStreamDestroy(stream);
+  dev_ct1.destroy_queue(stream);
 
   delete in;
   delete o_gpu;
@@ -191,35 +180,43 @@ bool test2_fulllen_input(size_t inlen, float gen_dist[], int distlen = K)
 
 template <int NSYM = 1024, int CHUNK = 32768, int NWARP = 8>
 bool perf(
-    pszmem_cxx<T>* in, pszmem_cxx<FQ>* o_gpusp,       // for histsp
-    pszmem_cxx<FQ>* o_gpu, pszmem_cxx<FQ>* o_serial,  // reference
-    cudaStream_t stream)
+    memobj<T>* in, memobj<FQ>* o_gpusp,       // for histsp
+    memobj<FQ>* o_gpu, memobj<FQ>* o_serial,  // reference
+    dpct::queue_ptr stream)
 {
   constexpr auto NTREAD = 32 * NWARP;
 
-  histsp_multiwarp<T, NWARP, CHUNK, FQ>
-      <<<(in->len() - 1) / CHUNK + 1, NTREAD, NSYM * sizeof(FQ), stream>>>(
-          in->dptr(), in->len(), o_gpusp->dptr(), NSYM, NSYM / 2);
+  auto q = (sycl::queue*)stream;
 
-  cudaStreamSynchronize(stream);
+  sycl::event e = q->submit([&](sycl::handler& cgh) {
+    auto in_dptr_ct0 = in->dptr();
+    auto in_len_ct1 = in->len();
+    auto o_gpusp_dptr_ct2 = o_gpusp->dptr();
+
+    cgh.parallel_for(
+        sycl::nd_range<3>(
+            sycl::range<3>(1, 1, (in->len() - 1) / CHUNK + 1) * sycl::range<3>(1, 1, NTREAD),
+            sycl::range<3>(1, 1, NTREAD)),
+        [=](sycl::nd_item<3> item_ct1) {
+          histsp_multiwarp<T, NWARP, CHUNK, FQ>(
+              in_dptr_ct0, in_len_ct1, o_gpusp_dptr_ct2, NSYM, NSYM / 2);
+        });
+  });
+
+  q->wait();
 
   // check for error
-  cudaError_t error = cudaGetLastError();
-  if (error != cudaSuccess) {
-    // print the CUDA error message and exit
-    printf("NSYM: %d\tCHUNK: %d\tNWARP: %d\n", NSYM, CHUNK, NWARP);
-    printf("CUDA error: %s\n", cudaGetErrorString(error));
-    exit(-1);
-  }
+  /*
+  DPCT1010:5: SYCL uses exceptions to report errors and does not use the error
+  codes. The call was replaced with 0. You need to rewrite this code.
+  */
+  dpct::err0 error = 0;
 
   // check correctness
   auto all_eq = true;
 
   for (auto i = 0; i < NSYM; i++) {
-    if (o_gpu->hptr(i) == o_gpusp->hptr(i) and
-        o_gpusp->hptr(i) == o_serial->hptr(i)) {
-      continue;
-    }
+    if (o_gpu->hptr(i) == o_gpusp->hptr(i) and o_gpusp->hptr(i) == o_serial->hptr(i)) { continue; }
     else {
       printf(
           "first not equal\t"
@@ -237,15 +234,10 @@ bool perf(
 template <int NSYM = 1024>
 bool test3_performance_tuning(size_t inlen, float gen_dist[], int distlen = K)
 {
-  auto in = new pszmem_cxx<T>(inlen, 1, 1, "hist-in");
-  auto o_gpu = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_gpu");
-  auto o_gpusp = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_gpusp");
-  auto o_serial = new pszmem_cxx<FQ>(NSYM, 1, 1, "hist-o_serial");
-
-  in->control({Malloc, MallocHost});
-  o_gpu->control({Malloc, MallocHost});
-  o_gpusp->control({Malloc, MallocHost});
-  o_serial->control({MallocHost});
+  auto in = new memobj<T>(inlen, "hist-in", {Malloc, MallocHost});
+  auto o_gpu = new memobj<FQ>(NSYM, "hist-o_gpu", {Malloc, MallocHost});
+  auto o_gpusp = new memobj<FQ>(NSYM, "hist-o_gpusp", {Malloc, MallocHost});
+  auto o_serial = new memobj<FQ>(NSYM, "hist-o_serial", {MallocHost});
 
   // setup using randgen
   helper_generate_array(in->hptr(), inlen, gen_dist, distlen, NSYM / 2);
@@ -253,20 +245,21 @@ bool test3_performance_tuning(size_t inlen, float gen_dist[], int distlen = K)
 
   float t_hist_gpu, t_histsp_ser;
 
-  cudaStream_t stream;
-  cudaStreamCreate(&stream);
+  // dpct::device_ext& dev_ct1 = dpct::get_current_device();
+  // dpct::queue_ptr stream;
+  // stream = dev_ct1.create_queue();
+  sycl::queue q;
 
   // run CPU and GPU reference
-  psz::histogram<PROPER_GPU_BACKEND, T>(
-      in->dptr(), inlen, o_gpu->dptr(), NSYM, &t_hist_gpu, stream);
+  // pszcxx_histogram_generic<PROPER_RUNTIME, T>(
+  //     in->dptr(), inlen, o_gpu->dptr(), NSYM, &t_hist_gpu, &q);
 
-  psz::histsp<pszpolicy::SEQ, T, uint32_t>(
+  pszcxx_histogram_cauchy<psz_runtime::SEQ, T, uint32_t>(
       in->hptr(), inlen, o_serial->hptr(), NSYM, &t_histsp_ser);
-  cudaStreamSynchronize(stream);
 
 // start testing & profiling
 #define PERF(NSYM, CHUNK, NWARP) \
-  eq = eq and perf<NSYM, CHUNK, NWARP>(in, o_gpusp, o_gpu, o_serial, stream);
+  eq = eq and perf<NSYM, CHUNK, NWARP>(in, o_gpusp, o_gpu, o_serial, &q);
 
   auto eq = true;
   PERF(NSYM, 16384, 1);
@@ -297,7 +290,7 @@ bool test3_performance_tuning(size_t inlen, float gen_dist[], int distlen = K)
   PERF(NSYM, 65536 * 2, 16);
   PERF(NSYM, 65536 * 2, 32);
 
-  cudaStreamDestroy(stream);
+  // dev_ct1.destroy_queue(stream);
   delete in;
   delete o_gpu;
   delete o_gpusp;

@@ -1,11 +1,11 @@
 // deps
 #include <ctime>
 #include <random>
+
 #include "detail/busyheader.hh"
-#include "detail/port.hh"
 #include "rand.hh"
 // definitions
-#include "detail/t_spv.cuhip.inl"
+#include "detail/t_spv.cu_hip.inl"
 
 int main()
 {

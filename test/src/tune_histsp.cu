@@ -2,9 +2,8 @@
 #include <random>
 
 #include "detail/busyheader.hh"
-#include "detail/port.hh"
 // definitions
-#include "detail/t_histsp.cu_hip.inl"
+#include "detail/tune_histsp.cuhip.inl"
 
 int main()
 {

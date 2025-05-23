@@ -1,9 +1,9 @@
 // deps
-#include "detail/busyheader.hh"
-#include "detail/port.hh"
 #include <random>
+
+#include "detail/busyheader.hh"
 // definitions
-#include "detail/t_histsp.cuhip.inl"
+#include "detail/t_histsp.cu_hip.inl"
 
 int main()
 {
