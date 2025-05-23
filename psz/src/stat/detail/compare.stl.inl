@@ -42,8 +42,7 @@ void cppstl_extrema(T* in, szt const len, T res[4])
 
 template <typename T>
 bool cppstl_error_bounded(
-    T* a, T* b, size_t const len, double const eb,
-    size_t* first_faulty_idx = nullptr)
+    T* a, T* b, size_t const len, double const eb, size_t* first_faulty_idx = nullptr)
 {
   // debugging
 
@@ -58,7 +57,7 @@ bool cppstl_error_bounded(
 }
 
 template <typename T>
-void cppstl_assess_quality(psz_summary* s, T* xdata, T* odata, size_t const len)
+void cppstl_assess_quality(psz_statistics* s, T* xdata, T* odata, size_t const len)
 {
   double max_odata = odata[0], min_odata = odata[0];
   double max_xdata = xdata[0], min_xdata = xdata[0];
@@ -68,8 +67,7 @@ void cppstl_assess_quality(psz_summary* s, T* xdata, T* odata, size_t const len)
   for (size_t i = 0; i < len; i++) sum_0 += odata[i], sum_x += xdata[i];
 
   double mean_odata = sum_0 / len, mean_xdata = sum_x / len;
-  double sum_var_odata = 0, sum_var_xdata = 0, sum_err2 = 0, sum_corr = 0,
-         rel_abserr = 0;
+  double sum_var_odata = 0, sum_var_xdata = 0, sum_err2 = 0, sum_corr = 0, rel_abserr = 0;
 
   double max_pwrrel_abserr = 0;
   size_t max_abserr_index = 0;
@@ -83,8 +81,7 @@ void cppstl_assess_quality(psz_summary* s, T* xdata, T* odata, size_t const len)
     float abserr = fabs(xdata[i] - odata[i]);
     if (odata[i] != 0) {
       rel_abserr = abserr / fabs(odata[i]);
-      max_pwrrel_abserr =
-          max_pwrrel_abserr < rel_abserr ? rel_abserr : max_pwrrel_abserr;
+      max_pwrrel_abserr = max_pwrrel_abserr < rel_abserr ? rel_abserr : max_pwrrel_abserr;
     }
     max_abserr_index = max_abserr < abserr ? i : max_abserr_index;
     max_abserr = max_abserr < abserr ? abserr : max_abserr;
@@ -109,15 +106,15 @@ void cppstl_assess_quality(psz_summary* s, T* xdata, T* odata, size_t const len)
   s->xdata.rng = max_xdata - min_xdata;
   s->xdata.std = std_xdata;
 
-  s->max_err.idx = max_abserr_index;
-  s->max_err.abs = max_abserr;
-  s->max_err.rel = max_abserr / s->odata.rng;
-  s->max_err.pwrrel = max_pwrrel_abserr;
+  s->max_err_idx = max_abserr_index;
+  s->max_err_abs = max_abserr;
+  s->max_err_rel = max_abserr / s->odata.rng;
+  s->max_err_pwrrel = max_pwrrel_abserr;
 
-  s->score.coeff = ee / std_odata / std_xdata;
-  s->score.MSE = sum_err2 / len;
-  s->score.NRMSE = sqrt(s->score.MSE) / s->odata.rng;
-  s->score.PSNR = 20 * log10(s->odata.rng) - 10 * log10(s->score.MSE);
+  s->score_coeff = ee / std_odata / std_xdata;
+  s->score_MSE = sum_err2 / len;
+  s->score_NRMSE = sqrt(s->score_MSE) / s->odata.rng;
+  s->score_PSNR = 20 * log10(s->odata.rng) - 10 * log10(s->score_MSE);
 }
 
 }  // namespace psz

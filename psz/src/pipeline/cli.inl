@@ -83,7 +83,7 @@ class CLI {
 
     reconst->control({D2H});
 
-    psz_summary stat;
+    psz_statistics stat;
     psz::assess_quality<SEQ>(&stat, reconst->hptr(), original->hptr(), len);
     psz::print_metrics_cross<T>(&stat, 0, true);
 
@@ -106,9 +106,7 @@ class CLI {
       std::string compressed_name, uint8_t* compressed, size_t compressed_len)
   {
     auto file = new pszmem_cxx<uint8_t>(compressed_len, 1, 1, "cusza");
-    file->dptr(compressed)
-        ->control({MallocHost, D2H})
-        ->file(compressed_name.c_str(), ToFile);
+    file->dptr(compressed)->control({MallocHost, D2H})->file(compressed_name.c_str(), ToFile);
     // ->control({FreeHost});
 
     delete file;
@@ -123,9 +121,7 @@ class CLI {
     size_t compressed_len;
     pszheader header;
 
-    input->control({MallocHost, Malloc})
-        ->file(ctx->infile, FromFile)
-        ->control({H2D});
+    input->control({MallocHost, Malloc})->file(ctx->infile, FromFile)->control({H2D});
 
     // adjust eb
     if (ctx->mode == Rel) {
@@ -142,17 +138,15 @@ class CLI {
     psz_compress_init(compressor, uncomp_len, ctx);
 
     psz_compress(
-        compressor, input->dptr(), uncomp_len, &compressed, &compressed_len,
-        &header, (void*)&timerecord, stream);
+        compressor, input->dptr(), uncomp_len, &compressed, &compressed_len, &header,
+        (void*)&timerecord, stream);
 
     printf("\n(c) COMPRESSION REPORT\n");
 
-    if (ctx->report_time)
-      psz::TimeRecordViewer::view_timerecord(&timerecord, &header);
+    if (ctx->report_time) psz::TimeRecordViewer::view_timerecord(&timerecord, &header);
     if (ctx->report_cr) psz::TimeRecordViewer::view_cr(&header);
 
-    write_compressed_to_disk(
-        std::string(ctx->infile) + ".cusza", compressed, compressed_len);
+    write_compressed_to_disk(std::string(ctx->infile) + ".cusza", compressed, compressed_len);
 
     delete input;
   }
@@ -167,12 +161,9 @@ class CLI {
     // all lengths in metadata
     auto compressed_len = psz_utils::filesize(ctx->infile);
 
-    auto compressed =
-        new pszmem_cxx<uint8_t>(compressed_len, 1, 1, "compressed");
+    auto compressed = new pszmem_cxx<uint8_t>(compressed_len, 1, 1, "compressed");
 
-    compressed->control({MallocHost, Malloc})
-        ->file(ctx->infile, FromFile)
-        ->control({H2D});
+    compressed->control({MallocHost, Malloc})->file(ctx->infile, FromFile)->control({H2D});
 
     auto header = new psz_header;
     memcpy(header, compressed->hptr(), sizeof(psz_header));
@@ -194,18 +185,15 @@ class CLI {
     // compressor->header->intp_param = ctx->intp_param;
 
     psz_decompress(
-        compressor, compressed->dptr(), psz_utils::filesize(header),
-        decompressed->dptr(), outlier_tmp->dptr(), decomp_len,
-        (void*)&timerecord, stream);
+        compressor, compressed->dptr(), psz_utils::filesize(header), decompressed->dptr(),
+        outlier_tmp->dptr(), decomp_len, (void*)&timerecord, stream);
 
     if (ctx->report_time)
-      psz::TimeRecordViewer::view_decompression(
-          &timerecord, decompressed->m->bytes);
+      psz::TimeRecordViewer::view_decompression(&timerecord, decompressed->m->bytes);
     psz::view(header, decompressed, original, ctx->original_file);
 
     if (not ctx->skip_tofile)
-      decompressed->control({D2H})->file(
-          std::string(basename + ".cuszx").c_str(), ToFile);
+      decompressed->control({D2H})->file(std::string(basename + ".cuszx").c_str(), ToFile);
 
     // decompressed->control({FreeHost, Free});
     delete decompressed;
@@ -236,8 +224,7 @@ class CLI {
 
     sycl::queue q;
     auto plist = sycl::property_list(
-        sycl::property::queue::in_order(),
-        sycl::property::queue::enable_profiling());
+        sycl::property::queue::in_order(), sycl::property::queue::enable_profiling());
 
     if (ctx->device == CPU)
       q = sycl::queue(sycl::cpu_selector_v, plist);

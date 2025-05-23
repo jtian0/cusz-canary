@@ -32,12 +32,11 @@ static const int AVGVAL = 2;
 static const int RNG = 3;
 
 template <typename T>
-void thrustgpu_assess_quality(psz_summary* s, T* xdata, T* odata, size_t len)
+void thrustgpu_assess_quality(psz_statistics* s, T* xdata, T* odata, size_t len)
 {
   using tup = thrust::tuple<T, T>;
 
-  thrust::device_ptr<T> p_odata =
-      thrust::device_pointer_cast(odata);  // origin
+  thrust::device_ptr<T> p_odata = thrust::device_pointer_cast(odata);  // origin
   thrust::device_ptr<T> p_xdata = thrust::device_pointer_cast(xdata);
 
   T odata_res[4], xdata_res[4];
@@ -48,8 +47,7 @@ void thrustgpu_assess_quality(psz_summary* s, T* xdata, T* odata, size_t len)
   psz::probe_extrema<CUDA, T>(xdata, len, xdata_res);
 
   auto begin = thrust::make_zip_iterator(thrust::make_tuple(p_odata, p_xdata));
-  auto end = thrust::make_zip_iterator(
-      thrust::make_tuple(p_odata + len, p_xdata + len));
+  auto end = thrust::make_zip_iterator(thrust::make_tuple(p_odata + len, p_xdata + len));
 
   // clang-format off
     auto corr      = [=] __host__ __device__(tup t)  { return (thrust::get<0>(t) - odata[AVGVAL]) * (thrust::get<1>(t) - xdata[AVGVAL]); };
@@ -85,15 +83,15 @@ void thrustgpu_assess_quality(psz_summary* s, T* xdata, T* odata, size_t len)
   s->xdata.rng = xdata_res[MAXVAL] - xdata_res[MINVAL];
   s->xdata.std = std_xdata;
 
-  s->max_err.idx = max_abserr_index;
-  s->max_err.abs = max_abserr;
-  s->max_err.rel = max_abserr / s->odata.rng;
-  s->max_err.pwrrel = NAN;
+  s->max_err_idx = max_abserr_index;
+  s->max_err_abs = max_abserr;
+  s->max_err_rel = max_abserr / s->odata.rng;
+  s->max_err_pwrrel = NAN;
 
-  s->score.coeff = ee / std_odata / std_xdata;
-  s->score.MSE = sum_err2 / len;
-  s->score.NRMSE = sqrt(s->score.MSE) / s->odata.rng;
-  s->score.PSNR = 20 * log10(s->odata.rng) - 10 * log10(s->score.MSE);
+  s->score_coeff = ee / std_odata / std_xdata;
+  s->score_MSE = sum_err2 / len;
+  s->score_NRMSE = sqrt(s->score_MSE) / s->odata.rng;
+  s->score_PSNR = 20 * log10(s->odata.rng) - 10 * log10(s->score_MSE);
 }
 
 }  // namespace psz

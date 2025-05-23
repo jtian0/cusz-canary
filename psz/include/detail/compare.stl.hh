@@ -23,11 +23,10 @@ template <typename T>
 void cppstl_extrema(T* in, szt const len, T res[4]);
 
 template <typename T>
-bool cppstl_error_bounded(
-    T* a, T* b, szt const len, f8 const eb, szt* first_faulty_idx = nullptr);
+bool cppstl_error_bounded(T* a, T* b, szt const len, f8 const eb, szt* first_faulty_idx = nullptr);
 
 template <typename T>
-void cppstl_assess_quality(pszsummary* s, T* xdata, T* odata, szt const len);
+void cppstl_assess_quality(psz_statistics* s, T* xdata, T* odata, szt const len);
 
 }  // namespace psz
 

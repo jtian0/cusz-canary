@@ -10,29 +10,25 @@ static void eval_dataquality_gpu(
     T* reconstructed, T* origin, size_t len, size_t compressed_bytes = 0)
 {
   // cross
-  auto stat_x = new psz_summary;
+  auto stat_x = new psz_statistics;
   psz::thrustgpu_assess_quality<T>(stat_x, reconstructed, origin, len);
   print_metrics_cross<T>(stat_x, compressed_bytes, true);
 
-  auto stat_auto_lag1 = new psz_summary;
-  psz::thrustgpu_assess_quality<T>(
-      stat_auto_lag1, origin, origin + 1, len - 1);
-  auto stat_auto_lag2 = new psz_summary;
-  psz::thrustgpu_assess_quality<T>(
-      stat_auto_lag2, origin, origin + 2, len - 2);
+  auto stat_auto_lag1 = new psz_statistics;
+  psz::thrustgpu_assess_quality<T>(stat_auto_lag1, origin, origin + 1, len - 1);
+  auto stat_auto_lag2 = new psz_statistics;
+  psz::thrustgpu_assess_quality<T>(stat_auto_lag2, origin, origin + 2, len - 2);
 
-  print_metrics_auto(
-      &stat_auto_lag1->score.coeff, &stat_auto_lag2->score.coeff);
+  print_metrics_auto(&stat_auto_lag1->score_coeff, &stat_auto_lag2->score_coeff);
 
   delete stat_x, delete stat_auto_lag1, delete stat_auto_lag2;
 }
 
 template <typename T>
 static void eval_dataquality_cpu(
-    T* _d1, T* _d2, size_t len, size_t compressed_bytes = 0,
-    bool from_device = true)
+    T* _d1, T* _d2, size_t len, size_t compressed_bytes = 0, bool from_device = true)
 {
-  auto stat = new psz_summary;
+  auto stat = new psz_statistics;
   T* reconstructed;
   T* origin;
   if (not from_device) {
@@ -50,13 +46,12 @@ static void eval_dataquality_cpu(
   cusz::verify_data<T>(stat, reconstructed, origin, len);
   print_metrics_cross<T>(stat, compressed_bytes, false);
 
-  auto stat_auto_lag1 = new psz_summary;
+  auto stat_auto_lag1 = new psz_statistics;
   cusz::verify_data<T>(stat_auto_lag1, origin, origin + 1, len - 1);
-  auto stat_auto_lag2 = new psz_summary;
+  auto stat_auto_lag2 = new psz_statistics;
   cusz::verify_data<T>(stat_auto_lag2, origin, origin + 2, len - 2);
 
-  print_metrics_auto(
-      &stat_auto_lag1->score.coeff, &stat_auto_lag2->score.coeff);
+  print_metrics_auto(&stat_auto_lag1->score_coeff, &stat_auto_lag2->score_coeff);
 
   if (from_device) {
     if (reconstructed) cudaFreeHost(reconstructed);
@@ -68,16 +63,13 @@ static void eval_dataquality_cpu(
 
 template <typename T>
 static void view(
-    psz_header* header, pszmem_cxx<T>* xdata, pszmem_cxx<T>* cmp,
-    string const& compare)
+    psz_header* header, pszmem_cxx<T>* xdata, pszmem_cxx<T>* cmp, string const& compare)
 {
   auto len = psz_utils::uncompressed_len(header);
   auto compressd_bytes = psz_utils::filesize(header);
 
   auto compare_on_gpu = [&]() {
-    cmp->control({MallocHost, Malloc})
-        ->file(compare.c_str(), FromFile)
-        ->control({H2D});
+    cmp->control({MallocHost, Malloc})->file(compare.c_str(), FromFile)->control({H2D});
 
     eval_dataquality_gpu(xdata->dptr(), cmp->dptr(), len, compressd_bytes);
     // cmp->control({FreeHost, Free});

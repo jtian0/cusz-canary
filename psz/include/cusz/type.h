@@ -181,17 +181,29 @@ typedef struct Res {
 } pszscanres;
 typedef pszscanres Res;
 
-typedef struct psz_summary {
-  // clang-format off
-    pszscanres odata, xdata;
-    struct { f8 PSNR, MSE, NRMSE, coeff; } score;
-    struct { f8 abs, rel, pwrrel; size_t idx; } max_err;
-    struct { f8 lag_one, lag_two; } autocor;
-    f8 user_eb;
-    size_t len;
-  // clang-format on
-} psz_summary;
-typedef psz_summary pszsummary;
+// typedef struct psz_summary {
+//   // clang-format off
+//     pszscanres odata, xdata;
+//     struct { f8 PSNR, MSE, NRMSE, coeff; } score;
+//     struct { f8 abs, rel, pwrrel; size_t idx; } max_err;
+//     struct { f8 lag_one, lag_two; } autocor;
+//     f8 user_eb;
+//     size_t len;
+//   // clang-format on
+// } psz_summary;
+// typedef psz_summary pszsummary;
+
+// nested struct object (rather than ptr) results in Swig creating a `__get`,
+// which can be breaking. Used `prefix_` instead.
+typedef struct psz_statistics {
+  psz_data_summary odata, xdata;
+  f8 score_PSNR, score_MSE, score_NRMSE, score_coeff;
+  f8 max_err_abs, max_err_rel, max_err_pwrrel;
+  size_t max_err_idx;
+  f8 autocor_lag_one, autocor_lag_two;
+  f8 user_eb;
+  size_t len;
+} psz_statistics;
 
 typedef u1* pszout;
 // used for bridging some compressor internal buffer

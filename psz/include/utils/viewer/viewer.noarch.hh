@@ -7,7 +7,7 @@ namespace psz {
 
 template <typename T>
 static void print_metrics_cross(
-    pszsummary* s, size_t compressed_bytes = 0, bool gpu_checker = false)
+    psz_statistics* s, size_t compressed_bytes = 0, bool gpu_checker = false)
 {
   auto checker = (not gpu_checker) ? string("(using CPU checker)") : string("(using GPU checker)");
   auto bytes = (s->len * sizeof(T) * 1.0);
@@ -33,10 +33,10 @@ static void print_metrics_cross(
   println("eb-lossy", s->xdata.min, s->xdata.max, s->xdata.rng, s->xdata.std);
 
   printhead("", "abs-val", "abs-idx", "pw-rel", "VS-RNG");
-  println("max-error", s->max_err.abs, s->max_err.idx, s->max_err.pwrrel, s->max_err.rel);
+  println("max-error", s->max_err_abs, s->max_err_idx, s->max_err_pwrrel, s->max_err_rel);
 
   printhead("", "CR", "NRMSE", "cross-cor", "PSNR");
-  println("metrics", bytes / compressed_bytes, s->score.NRMSE, s->score.coeff, s->score.PSNR);
+  println("metrics", bytes / compressed_bytes, s->score_NRMSE, s->score_coeff, s->score_PSNR);
 
   // printf("\n");
 };

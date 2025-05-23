@@ -57,16 +57,13 @@ void probe_extrema(T* in, size_t len, T res[4])
 
 template <pszpolicy P, typename T>
 bool error_bounded(
-    T* a, T* b, size_t const len, double const eb,
-    size_t* first_faulty_idx = nullptr)
+    T* a, T* b, size_t const len, double const eb, size_t* first_faulty_idx = nullptr)
 {
   bool eb_ed = true;
-  if (P == SEQ)
-    eb_ed = psz::cppstl_error_bounded(a, b, len, eb, first_faulty_idx);
+  if (P == SEQ) eb_ed = psz::cppstl_error_bounded(a, b, len, eb, first_faulty_idx);
 #ifdef REACTIVATE_THRUST_DPLGPU
   else if (P == THRUST_DPL)
-    eb_ed = psz::thrustgpu::thrustgpu_error_bounded(
-        a, b, len, eb, first_faulty_idx);
+    eb_ed = psz::thrustgpu::thrustgpu_error_bounded(a, b, len, eb, first_faulty_idx);
 #endif
   else
     throw runtime_error(string(__FUNCTION__) + ": backend not supported.");
@@ -74,7 +71,7 @@ bool error_bounded(
 }
 
 template <pszpolicy P, typename T>
-void assess_quality(pszsummary* s, T* xdata, T* odata, size_t const len)
+void assess_quality(psz_statistics* s, T* xdata, T* odata, size_t const len)
 {
   // [TODO] THRUST_DPL is not activated in the frontend
   if (P == SEQ)
@@ -83,12 +80,9 @@ void assess_quality(pszsummary* s, T* xdata, T* odata, size_t const len)
     psz::thrustgpu_assess_quality(s, xdata, odata, len);
   else if (P == SYCL) {
 #if defined(PSZ_USE_1API)
-    if constexpr (std::is_same_v<T, f4>) {
-      psz::dpl_assess_quality(s, xdata, odata, len);
-    }
+    if constexpr (std::is_same_v<T, f4>) { psz::dpl_assess_quality(s, xdata, odata, len); }
     else {
-      static_assert(
-          std::is_same_v<T, f4>, "No f8, fast fail on sycl::aspects::fp64.");
+      static_assert(std::is_same_v<T, f4>, "No f8, fast fail on sycl::aspects::fp64.");
     }
 #endif
   }
